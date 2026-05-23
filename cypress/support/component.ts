@@ -1,27 +1,60 @@
 import './commands'
+import '@testing-library/cypress/add-commands'
 import { mount } from 'cypress/vue'
+import { defineComponent, h } from 'vue'
+import type { App } from 'vue'
+import type { Router } from 'vue-router'
 import { createPinia, setActivePinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
+import { createVuetify } from 'vuetify'
+import * as components from 'vuetify/components'
+import { VApp } from 'vuetify/components'
+import * as directives from 'vuetify/directives'
+import { aliases, mdi } from 'vuetify/iconsets/mdi'
+import 'vuetify/styles'
+import '@mdi/font/css/materialdesignicons.css'
 import { routes } from '../../src/router'
 
+const vuetify = createVuetify({
+  components,
+  directives,
+  icons: { defaultSet: 'mdi', aliases, sets: { mdi } },
+})
+
+declare global {
+  namespace Cypress {
+    interface Chainable {
+      mount: typeof mount
+    }
+  }
+}
+
 Cypress.Commands.add('mount', (component, options = {}) => {
-  setActivePinia(createPinia())
+  const pinia = createPinia()
+  setActivePinia(pinia)
 
-  options.global = options.global || {}
-  options.global.plugins = options.global.plugins || []
+  // `router` is a custom extension not in MountingOptions types
+  const opts = options as typeof options & { router?: Router }
 
-  if (!options.router) {
-    options.router = createRouter({
+  opts.global = opts.global || {}
+  opts.global.plugins = [vuetify, pinia, ...(opts.global.plugins || [])]
+
+  if (!opts.router) {
+    opts.router = createRouter({
       routes,
       history: createMemoryHistory(),
     })
   }
 
-  options.global.plugins.push({
-    install(app) {
-      app.use(options.router)
+  opts.global.plugins.push({
+    install(app: App) {
+      app.use(opts.router!)
     },
   })
 
-  return mount(component, options)
+  const wrapped = defineComponent({
+    render: () => h(VApp, null, { default: () => h(component) }),
+  })
+
+  return mount(wrapped as any, options)
 })
