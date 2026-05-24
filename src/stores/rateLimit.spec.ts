@@ -10,9 +10,10 @@ describe('useRateLimitStore', () => {
   it('has correct defaults', () => {
     const store = useRateLimitStore()
 
-    expect(store.limit).toBe(10)
-    expect(store.remaining).toBe(10)
+    expect(store.limit).toBe(0)
+    expect(store.remaining).toBe(0)
     expect(store.resetAt).toBe(0)
+    expect(store.hasData).toBe(false)
     expect(store.isLow).toBe(false)
     expect(store.isEmpty).toBe(false)
   })
@@ -34,8 +35,8 @@ describe('useRateLimitStore', () => {
     const store = useRateLimitStore()
     store.update({})
 
-    expect(store.limit).toBe(10)
-    expect(store.remaining).toBe(10)
+    expect(store.limit).toBe(0)
+    expect(store.remaining).toBe(0)
     expect(store.resetAt).toBe(0)
   })
 
@@ -77,7 +78,7 @@ describe('useRateLimitStore', () => {
     store.update({ 'x-ratelimit-remaining': '3' })
 
     expect(store.remaining).toBe(3)
-    expect(store.limit).toBe(10)
+    expect(store.limit).toBe(0)
     expect(store.resetAt).toBe(0)
   })
 
@@ -86,7 +87,7 @@ describe('useRateLimitStore', () => {
     store.update({ 'x-ratelimit-limit': '5000' })
 
     expect(store.limit).toBe(5000)
-    expect(store.remaining).toBe(10)
+    expect(store.remaining).toBe(0)
     expect(store.resetAt).toBe(0)
   })
 })

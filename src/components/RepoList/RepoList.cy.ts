@@ -8,7 +8,6 @@ describe('<RepoList />', () => {
     cy.mount(RepoList, {
       props: {
         items: mockRepositories,
-        selectedId: null,
       }
     })
 
@@ -29,7 +28,7 @@ describe('<RepoList />', () => {
 
   it('shows the archive badge on an archived repo', () => {
     cy.mount(RepoList, {
-      props: { items: [archivedRepo], selectedId: null },
+      props: { items: [archivedRepo] },
     })
 
     cy.findByText('Public archive').should('be.visible')
@@ -42,7 +41,7 @@ describe('<RepoList />', () => {
     }
 
     cy.mount(RepoList, {
-      props: { items: [repoWithTopics], selectedId: null },
+      props: { items: [repoWithTopics] },
     })
 
     cy.findByText('react').should('be.visible')
@@ -56,7 +55,6 @@ describe('<RepoList />', () => {
     cy.mount(RepoList, {
       props: {
         items: mockRepositories,
-        selectedId: null,
         onSelectRepo,
       },
     })

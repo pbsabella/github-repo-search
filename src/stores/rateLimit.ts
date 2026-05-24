@@ -2,8 +2,8 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 
 export const useRateLimitStore = defineStore('rateLimit', () => {
-  const limit = ref<number>(10)
-  const remaining = ref<number>(10)
+  const limit = ref<number>(0)
+  const remaining = ref<number>(0)
   const resetAt = ref<number>(0) // zero means no call made yet
 
   const update = (headers: Record<string, string>) => {
@@ -24,10 +24,12 @@ export const useRateLimitStore = defineStore('rateLimit', () => {
     }
   }
 
-  const isLow = computed(() => remaining.value < 10)
-  const isEmpty = computed(() => remaining.value === 0)
+  const hasData = computed(() => limit.value > 0)
+  const isLow = computed(() => hasData.value && remaining.value < 10)
+  const isEmpty = computed(() => hasData.value && remaining.value === 0)
 
   return {
+    hasData,
     isEmpty,
     isLow,
     limit,

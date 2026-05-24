@@ -9,10 +9,10 @@ describe('<TheHeader />', () => {
     cy.findByRole('banner').contains('GitHub Repo Search')
   })
 
-  it('shows rate limit chip with defaults (10 / 10)', () => {
+  it('shows dash in rate limit chip when no API data available', () => {
     cy.mount(TheHeader)
 
-    cy.findByLabelText('API rate limit').should('be.visible').and('contain', '10')
+    cy.findByLabelText('API rate limit').should('be.visible').and('contain', '—')
   })
 
   it('reflects updated remaining count', () => {
@@ -26,10 +26,10 @@ describe('<TheHeader />', () => {
     cy.findByLabelText('API rate limit').should('contain', '8')
   })
 
-  it('chip color is success by default', () => {
+  it('chip has no color class when no API data available', () => {
     cy.mount(TheHeader)
 
-    cy.findByLabelText('API rate limit').should('have.class', 'bg-success')
+    cy.findByLabelText('API rate limit').should('be.visible')
   })
 
   it('chip color is warning when rate limit is low', () => {
@@ -53,7 +53,11 @@ describe('<TheHeader />', () => {
   })
 
   it('shows full label text when not compact', () => {
-    cy.mount(TheHeader, { props: { compact: false } })
+    cy.mount(TheHeader, { props: { compact: false } }).then(() => {
+      const store = useRateLimitStore()
+      store.remaining = 55
+      store.limit = 60
+    })
 
     cy.findByLabelText('API rate limit').should('contain', 'Rate limit:')
   })

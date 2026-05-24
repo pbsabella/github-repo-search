@@ -109,7 +109,6 @@ const details = computed<RepoDetail[]>(() => {
                 <!-- TODO: Container query? -->
                 <VCol cols="12" md="6" v-for="detail in details" :key="detail.code">
                   <StatCard
-                    :key="detail.code"
                     :label="detail.label"
                     :value="detail.value"
                     :icon="detail.icon"

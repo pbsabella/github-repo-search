@@ -21,7 +21,7 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
 
   const totalPages = computed(() => Math.ceil(totalCount.value / PER_PAGE))
 
-  const search = async (q: string) => {
+  const search = async (q: string, pageNum = 1) => {
     if (!q?.trim()) {
       return
     }
@@ -32,12 +32,12 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
     loading.value = true
     error.value = null
     results.value = []
-    page.value = 1
+    page.value = pageNum
     hasSearched.value = true
     selectedRepo.value = null
 
     try {
-      const { data, headers } = await searchRepositories(q, 1)
+      const { data, headers } = await searchRepositories(q, pageNum)
 
       rateLimitStore.update(headers)
       results.value = data.items

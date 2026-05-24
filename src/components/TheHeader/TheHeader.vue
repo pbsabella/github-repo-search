@@ -9,6 +9,10 @@ const props = defineProps<{
 }>()
 
 const chipColor = computed(() => {
+  if (!store.hasData) {
+    return
+  }
+
   if (store.isEmpty) {
     return 'error'
   }
@@ -32,8 +36,11 @@ const chipColor = computed(() => {
         aria-label="API rate limit"
       >
         <div class="the-header__stats">
-          <span v-if="!props.compact">Rate limit: </span>
-          <span>{{ store.remaining }} / {{ store.limit }}</span>
+          <template v-if="store.hasData">
+            <span v-if="!props.compact">Rate limit: </span>
+            <span>{{ store.remaining }} / {{ store.limit }}</span>
+          </template>
+          <span v-else>—</span>
         </div>
       </VChip>
     </template>

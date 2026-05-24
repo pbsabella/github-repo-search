@@ -1,44 +1,57 @@
 <script setup lang="ts">
-import { watch, ref, computed } from 'vue'
+import { watch, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import RepoList from '@/components/RepoList/RepoList.vue'
 import RepoDetails from '@/components/RepoDetails/RepoDetails.vue'
 import { useRepoSearchStore } from '@/stores/repoSearch'
-import type { GitHubRepo } from '@/types/github'
 import SidePanel from '@/components/SidePanel/SidePanel.vue'
 
 const store = useRepoSearchStore()
+const route = useRoute()
+const router = useRouter()
 
 const handleSearch = () => {
-  if (store.query?.trim()) {
-    store.search(store.query)
+  const q = store.query?.trim()
+
+  if (q) {
+    store.search(q)
+    router.push({ query: { q, page: '1' } })
   }
 }
-
-// TODO: Fix error handling between search & pager
 
 const showPageError = ref(false)
 
 watch(
   () => store.pageError,
   (val) => {
-    if (val) {
-      showPageError.value = true
-    } else {
-      showPageError.value = false
-    }
+    showPageError.value = !!val
   },
 )
 
-const isPanelOpen = computed({
-  get: () => store.selectedRepo !== null,
-  set: (open) => {
-    if (!open) store.selectRepo(null)
-  },
-})
-
-const handleSelectRepo = (repo: GitHubRepo) => {
-  store.selectRepo(repo)
+const handlePageChange = (page: number) => {
+  router.push({ query: { ...route.query, page: String(page) } })
 }
+
+watch(
+  () => [route.query.q, route.query.page],
+  async ([q, pageStr]) => {
+    const query = (q as string)?.trim()
+    const page = parseInt(pageStr as string, 10) || 1
+
+    if (!query) {
+      return
+    }
+
+    if (query !== store.query) {
+      store.query = query
+
+      await store.search(query, page)
+    } else if (page !== store.page && store.hasSearched) {
+      await store.goToPage(page)
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -103,19 +116,10 @@ const handleSelectRepo = (repo: GitHubRepo) => {
           <RepoList
             class="search-dashboard__list"
             :items="store.results"
-            :selected-id="store.selectedRepo?.id ?? null"
-            @select-repo="(repo) => handleSelectRepo(repo)"
+            @select-repo="(repo) => store.selectRepo(repo)"
           />
 
           <VRow v-if="store.totalPages > 0" justify="center" density="compact">
-            <VCol cols="12">
-              <p class="search-dashboard__count">
-                Page {{ store.page }} of {{ store.totalPages }} ({{
-                  store.totalCount.toLocaleString()
-                }}
-                results)
-              </p>
-            </VCol>
             <VCol cols="auto">
               <VPagination
                 density="compact"
@@ -123,7 +127,7 @@ const handleSelectRepo = (repo: GitHubRepo) => {
                 :total-visible="10"
                 :length="store.totalPages"
                 :disabled="store.loading"
-                @update:model-value="store.goToPage"
+                @update:model-value="handlePageChange"
               />
             </VCol>
           </VRow>
@@ -141,7 +145,10 @@ const handleSelectRepo = (repo: GitHubRepo) => {
     :text="store.pageError ?? ''"
   />
 
-  <SidePanel v-model="isPanelOpen">
+  <SidePanel
+    :model-value="store.selectedRepo !== null"
+    @update:model-value="(v) => !v && store.selectRepo(null)"
+  >
     <RepoDetails :repo="store.selectedRepo" />
   </SidePanel>
 </template>

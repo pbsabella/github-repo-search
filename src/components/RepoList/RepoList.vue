@@ -4,7 +4,6 @@ import { formatCompactCount } from '@/utils/format'
 
 defineProps<{
   items: GitHubRepo[]
-  selectedId: number | null
 }>()
 
 const emit = defineEmits<{
