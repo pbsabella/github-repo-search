@@ -1,4 +1,6 @@
 import './commands'
+import './component.css'
+import '../../src/assets/main.css'
 import '@testing-library/cypress/add-commands'
 import { mount } from 'cypress/vue'
 import { defineComponent, h } from 'vue'
@@ -10,24 +12,19 @@ import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import { VApp } from 'vuetify/components'
 import * as directives from 'vuetify/directives'
-import { aliases, mdi } from 'vuetify/iconsets/mdi'
+import { vuetifyOptions } from '@/plugins/vuetify'
 import 'vuetify/styles'
 import '@mdi/font/css/materialdesignicons.css'
-import { routes } from '../../src/router'
+import { routes } from '@/router'
 
 const vuetify = createVuetify({
+  ...vuetifyOptions,
   components,
   directives,
-  icons: { defaultSet: 'mdi', aliases, sets: { mdi } },
+  defaults: {
+    VDialog: { transition: false },
+  },
 })
-
-declare global {
-  namespace Cypress {
-    interface Chainable {
-      mount: typeof mount
-    }
-  }
-}
 
 Cypress.Commands.add('mount', (component, options = {}) => {
   const pinia = createPinia()
@@ -53,8 +50,10 @@ Cypress.Commands.add('mount', (component, options = {}) => {
   })
 
   const wrapped = defineComponent({
-    render: () => h(VApp, null, { default: () => h(component) }),
+    render() {
+      return h(VApp, null, { default: () => h(component, { ...this.$attrs }, this.$slots) })
+    },
   })
 
-  return mount(wrapped as any, options)
+  return mount(wrapped, options)
 })

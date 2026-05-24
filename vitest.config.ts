@@ -9,7 +9,6 @@ export default mergeConfig(
       environment: 'jsdom',
       exclude: [...configDefaults.exclude, 'e2e/**', '**/*.cy.*'],
       root: fileURLToPath(new URL('./', import.meta.url)),
-      setupFiles: ['./src/test-utils/vitest.setup.ts'],
     },
   }),
 )
