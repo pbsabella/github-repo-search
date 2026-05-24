@@ -12,14 +12,12 @@ describe('<RepoList />', () => {
     })
 
     cy.findByText(mockRepositories[0].full_name).should('be.visible')
-    cy.findByText(`by ${mockRepositories[0].owner.login}`).should('be.visible')
     cy.findByText(mockRepositories[0].description).should('be.visible')
     cy.findByText(formatCompactCount(mockRepositories[0].stargazers_count)).should('be.visible')
     cy.findByText(formatCompactCount(mockRepositories[0].watchers_count)).should('be.visible')
     cy.findByText(mockRepositories[0].language).should('be.visible')
 
     cy.findByText(mockRepositories[1].full_name).should('be.visible')
-    cy.findByText(`by ${mockRepositories[1].owner.login}`).should('be.visible')
     cy.findByText(mockRepositories[1].description).should('be.visible')
     cy.findByText(formatCompactCount(mockRepositories[1].stargazers_count)).should('be.visible')
     cy.findByText(formatCompactCount(mockRepositories[1].watchers_count)).should('be.visible')

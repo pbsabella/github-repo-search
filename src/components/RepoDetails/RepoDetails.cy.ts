@@ -9,7 +9,7 @@ describe('<RepoDetails />', () => {
   it('renders the empty state when repo prop is not provided', () => {
     cy.mount(RepoDetails)
 
-    cy.findByText('Select a repository to view details.').should('be.visible');
+    cy.findByRole('heading', { level: 2, name: 'Nothing to show' }).should('be.visible');
   })
 
   it('renders the formatted repo details provided', () => {

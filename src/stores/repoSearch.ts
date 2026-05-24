@@ -1,7 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { searchRepositories, PER_PAGE } from '@/services/github'
-import { useRateLimitStore } from '@/stores/rateLimit'
 import type { GitHubRepo } from '@/types/github'
 
 // The GitHub REST API provides up to 1,000 results for each search
@@ -22,24 +21,21 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
   const totalPages = computed(() => Math.ceil(totalCount.value / PER_PAGE))
 
   const search = async (q: string, pageNum = 1) => {
-    if (!q?.trim()) {
+    if (!q?.trim() || loading.value) {
       return
     }
-
-    const rateLimitStore = useRateLimitStore()
 
     query.value = q
     loading.value = true
     error.value = null
+    pageError.value = null
     results.value = []
     page.value = pageNum
     hasSearched.value = true
     selectedRepo.value = null
 
     try {
-      const { data, headers } = await searchRepositories(q, pageNum)
-
-      rateLimitStore.update(headers)
+      const { data } = await searchRepositories(q, pageNum)
       results.value = data.items
       totalCount.value = Math.min(data.total_count, GITHUB_MAX_RESULTS)
     } catch (e: unknown) {
@@ -54,7 +50,6 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
       return
     }
 
-    const rateLimitStore = useRateLimitStore()
     const previousPage = page.value
     loading.value = true
     page.value = newPage
@@ -62,9 +57,7 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
     selectedRepo.value = null
 
     try {
-      const { data, headers } = await searchRepositories(query.value, page.value)
-
-      rateLimitStore.update(headers)
+      const { data } = await searchRepositories(query.value, page.value)
       results.value = data.items
       totalCount.value = Math.min(data.total_count, GITHUB_MAX_RESULTS)
       pageError.value = null

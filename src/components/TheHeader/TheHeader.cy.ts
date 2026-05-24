@@ -6,7 +6,7 @@ describe('<TheHeader />', () => {
   it('renders the project title in the banner', () => {
     cy.mount(TheHeader)
 
-    cy.findByRole('banner').contains('GitHub Repo Search')
+    cy.findByRole('heading', { name: 'GitHub Repo Search', level: 1 })
   })
 
   it('shows dash in rate limit chip when no API data available', () => {

@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import SearchDashboard from '../views/SearchDashboard.vue'
+import SearchDashboard from '@/views/SearchDashboard.vue'
 
 export const routes = [
   {

@@ -26,7 +26,8 @@ const chipColor = computed(() => {
 </script>
 
 <template>
-  <VAppBar class="the-header" title="GitHub Repo Search">
+  <VAppBar class="the-header" flat border density="compact">
+    <VAppBarTitle><h1 class="the-header__title">GitHub Repo Search</h1></VAppBarTitle>
     <template #append>
       <VChip
         :color="chipColor"
@@ -50,6 +51,11 @@ const chipColor = computed(() => {
 <style lang="scss">
 .the-header {
   padding-right: var(--space-2);
+
+  &__title {
+    font-weight: var(--font-weight-medium);
+    font-size: var(--font-size-body);
+  }
 
   &__stats {
     margin-left: var(--space-1);

@@ -1,14 +1,39 @@
 <script setup lang="ts">
-import { watch, ref } from 'vue'
+import { watch, computed, nextTick, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useDisplay } from 'vuetify'
 import RepoList from '@/components/RepoList/RepoList.vue'
 import RepoDetails from '@/components/RepoDetails/RepoDetails.vue'
 import { useRepoSearchStore } from '@/stores/repoSearch'
-import SidePanel from '@/components/SidePanel/SidePanel.vue'
+import { useRateLimitStore } from '@/stores/rateLimit'
+import { formatCompactCount, formatResetTime } from '@/utils/format'
+
+const { mdAndUp } = useDisplay()
 
 const store = useRepoSearchStore()
+const rateLimitStore = useRateLimitStore()
+const resetTime = computed(() => formatResetTime(rateLimitStore.resetAt))
 const route = useRoute()
 const router = useRouter()
+
+const listRef = ref<HTMLDivElement | null>(null)
+
+const showPageError = computed({
+  get: () => !!store.pageError,
+  set: (v) => {
+    if (!v) {
+      store.pageError = null
+    }
+  },
+})
+
+const pageErrorText = computed(() =>
+  rateLimitStore.isEmpty ? 'GitHub API rate limit reached.' : (store.pageError ?? ''),
+)
+
+const handlePageChange = (page: number) => {
+  router.push({ query: { ...route.query, page: String(page) } })
+}
 
 const handleSearch = () => {
   const q = store.query?.trim()
@@ -17,19 +42,6 @@ const handleSearch = () => {
     store.search(q)
     router.push({ query: { q, page: '1' } })
   }
-}
-
-const showPageError = ref(false)
-
-watch(
-  () => store.pageError,
-  (val) => {
-    showPageError.value = !!val
-  },
-)
-
-const handlePageChange = (page: number) => {
-  router.push({ query: { ...route.query, page: String(page) } })
 }
 
 watch(
@@ -44,7 +56,6 @@ watch(
 
     if (query !== store.query) {
       store.query = query
-
       await store.search(query, page)
     } else if (page !== store.page && store.hasSearched) {
       await store.goToPage(page)
@@ -52,115 +63,225 @@ watch(
   },
   { immediate: true },
 )
+
+const viewState = computed(() => {
+  if (!store.hasSearched) {
+    return 'initial'
+  }
+
+  if (store.error && !store.results.length) {
+    return 'error'
+  }
+
+  if (store.loading && !store.results.length) {
+    return 'loading'
+  }
+
+  if (!store.results.length) {
+    return 'no-results'
+  }
+
+  return 'results'
+})
+
+watch(
+  () => store.loading,
+  (loading, wasLoading) => {
+    if (wasLoading && !loading && store.hasSearched && store.results.length) {
+      nextTick(() => listRef.value?.scrollIntoView({ block: 'start' }))
+    }
+  },
+)
 </script>
 
 <template>
-  <VContainer fluid>
-    <h1>Repositories</h1>
-  </VContainer>
-
-  <VContainer fluid>
-    <VTextField
-      v-model="store.query"
-      clearable
-      label="Search GitHub"
-      variant="outlined"
-      prepend-inner-icon="mdi-magnify"
-      @keyup.enter="handleSearch"
-    />
-
-    <!-- TODO: Refine swapping between loading, error, loaded -->
-    <VRow v-if="store.loading">
-      <VCol v-for="i of 4" :key="i" cols="12">
-        <VCard>
-          <VSkeletonLoader type="list-item-avatar, sentences" />
-        </VCard>
+  <VContainer class="search-dashboard__header" fluid>
+    <VRow align="center">
+      <VCol cols="8" md="6">
+        <VTextField
+          v-model="store.query"
+          clearable
+          hide-details
+          color="primary"
+          density="compact"
+          type="search"
+          label="Search GitHub"
+          variant="outlined"
+          prepend-inner-icon="mdi-magnify"
+          @keyup.enter="handleSearch"
+        />
+      </VCol>
+      <VCol cols="4">
+        <p v-if="viewState !== 'initial'" class="search-dashboard__header-stats">
+          <span>{{ formatCompactCount(store.totalCount) }}</span> results
+        </p>
       </VCol>
     </VRow>
+  </VContainer>
 
-    <template v-else>
-      <VEmptyState
-        v-if="store.error && !store.results.length"
-        icon="mdi-alert-circle-outline"
-        :text="store.error"
-      >
-        <template #title>
-          <h2 class="search-dashboard__empty-title">Something went wrong</h2>
-        </template>
-      </VEmptyState>
-
-      <template v-else>
+  <VRow no-gutters>
+    <VCol class="search-dashboard__repo-list" cols="12" md="4">
+      <VContainer v-if="viewState === 'initial'">
         <VEmptyState
-          v-if="!store.hasSearched"
-          icon="mdi-magnify"
           text="Enter a repository name, owner, or topic in the search bar above to get started."
         >
+          <template #media>
+            <VAvatar rounded="sm" size="48" variant="tonal">
+              <VIcon size="24">{{ 'mdi-magnify' }}</VIcon>
+            </VAvatar>
+          </template>
           <template #title>
             <h2 class="search-dashboard__empty-title">Ready to explore?</h2>
           </template>
         </VEmptyState>
+      </VContainer>
 
-        <VEmptyState
-          v-else-if="!store.results.length"
-          icon="mdi-magnify-remove-outline"
-          text="Try a different search term."
-        >
+      <VContainer v-else-if="viewState === 'error'">
+        <VEmptyState>
+          <template #media>
+            <VAvatar rounded="sm" size="48" variant="tonal" color="error">
+              <VIcon size="24">
+                {{
+                  rateLimitStore.isEmpty ? 'mdi-timer-alert-outline' : 'mdi-alert-circle-outline'
+                }}
+              </VIcon>
+            </VAvatar>
+          </template>
+          <template #title>
+            <h2 class="search-dashboard__empty-title">
+              {{ rateLimitStore.isEmpty ? 'Rate limit reached' : 'Something went wrong' }}
+            </h2>
+          </template>
+          <template #text>
+            <template v-if="rateLimitStore.isEmpty">
+              <p>
+                You've hit GitHub's anonymous rate limit.
+                <span v-if="resetTime">Resets at {{ resetTime }}.</span>
+              </p>
+            </template>
+            <template v-else>
+              <p>
+                The request failed before we got a response. Check your connection and try again.
+              </p>
+              <p v-if="store.error">{{ store.error }}</p>
+            </template>
+          </template>
+          <template #actions>
+            <VBtn variant="flat" color="primary" @click="handleSearch">Retry</VBtn>
+          </template>
+        </VEmptyState>
+      </VContainer>
+
+      <VRow v-else-if="viewState === 'loading'">
+        <VCol v-for="i of 4" :key="i" cols="12">
+          <VSkeletonLoader type="list-item-avatar, sentences" />
+        </VCol>
+      </VRow>
+
+      <VContainer v-else-if="viewState === 'no-results'">
+        <VEmptyState icon="mdi-magnify-remove-outline" text="Try a different search term.">
+          <template #media>
+            <VAvatar rounded="sm" size="48" variant="tonal">
+              <VIcon size="24">{{ 'mdi-magnify-remove-outline' }}</VIcon>
+            </VAvatar>
+          </template>
           <template #title>
             <h2 class="search-dashboard__empty-title">No results found</h2>
           </template>
         </VEmptyState>
+      </VContainer>
 
-        <template v-else>
-          <VProgressLinear v-if="store.loading && store.results.length" indeterminate />
-
+      <template v-else>
+        <div
+          ref="listRef"
+          :inert="store.loading || undefined"
+          :class="{
+            'search-dashboard__list': true,
+            'search-dashboard__list--loading': store.loading,
+          }"
+        >
           <RepoList
-            class="search-dashboard__list"
             :items="store.results"
+            :selected-id="store.selectedRepo?.id ?? null"
             @select-repo="(repo) => store.selectRepo(repo)"
           />
+        </div>
 
-          <VRow v-if="store.totalPages > 0" justify="center" density="compact">
-            <VCol cols="auto">
+        <VRow v-if="store.totalPages > 0" justify="center" density="compact">
+          <VCol cols="auto">
+            <VContainer>
               <VPagination
                 density="compact"
+                size="sm"
                 :model-value="store.page"
-                :total-visible="10"
+                :total-visible="4"
                 :length="store.totalPages"
                 :disabled="store.loading"
                 @update:model-value="handlePageChange"
               />
-            </VCol>
-          </VRow>
-        </template>
+            </VContainer>
+          </VCol>
+        </VRow>
       </template>
-    </template>
-  </VContainer>
+    </VCol>
+
+    <VCol v-if="mdAndUp" cols="8">
+      <RepoDetails :repo="store.selectedRepo" />
+    </VCol>
+
+    <VBottomSheet
+      v-else
+      :model-value="store.selectedRepo !== null"
+      @update:model-value="(v) => !v && store.selectRepo(null)"
+    >
+      <VSheet min-height="50vh">
+        <RepoDetails :repo="store.selectedRepo" />
+      </VSheet>
+    </VBottomSheet>
+  </VRow>
 
   <VSnackbar
     v-model="showPageError"
     prepend-icon="mdi-alert-circle-outline"
     color="error"
-    timeout="3000"
+    timeout="5000"
     location="top"
-    :text="store.pageError ?? ''"
+    :text="pageErrorText"
   />
-
-  <SidePanel
-    :model-value="store.selectedRepo !== null"
-    @update:model-value="(v) => !v && store.selectRepo(null)"
-  >
-    <RepoDetails :repo="store.selectedRepo" />
-  </SidePanel>
 </template>
 
 <style lang="scss">
 .search-dashboard {
-  &__empty-title {
-    font-size: var(--font-size-h4);
+  &__header {
+    border-bottom: 1px solid var(--color-border);
   }
 
-  &__list {
-    margin-bottom: var(--space-8);
+  &__header-stats {
+    border-left: 1px solid var(--color-border);
+    font-size: var(--font-size-caption);
+    color: var(--color-text-secondary);
+    padding-left: var(--space-3);
+
+    span {
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text);
+    }
+  }
+
+  &__repo-list {
+    overflow-y: auto;
+    height: calc(100vh - 121px);
+    border-right: 1px solid var(--color-border);
+  }
+
+  &__empty-title {
+    font-size: var(--font-size-h6);
+    margin-top: var(--space-4);
+  }
+
+  &__list--loading {
+    opacity: 0.5;
+    transition: opacity 0.2s ease;
   }
 
   &__count {

@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useRepoSearchStore } from '@/stores/repoSearch'
-import { useRateLimitStore } from '@/stores/rateLimit'
 import * as github from '@/services/github'
 import type { SearchRepositoriesResponse } from '@/types/github'
 
@@ -98,22 +97,21 @@ describe('useRepoSearchStore', () => {
       expect(store.error).toBe('Search GitHub failed')
     })
 
-    it('updates rate limit store with response headers', async () => {
-      vi.spyOn(github, 'searchRepositories').mockResolvedValue(makeSearchResult())
-
-      const store = useRepoSearchStore()
-      const rateLimitStore = useRateLimitStore()
-      await store.search('react')
-
-      expect(rateLimitStore.limit).toBe(60)
-      expect(rateLimitStore.remaining).toBe(59)
-    })
-
     it('does nothing when query is blank', async () => {
       const spy = vi.spyOn(github, 'searchRepositories')
 
       const store = useRepoSearchStore()
       await store.search('   ')
+
+      expect(spy).not.toHaveBeenCalled()
+    })
+
+    it('does nothing when already loading', async () => {
+      const store = useRepoSearchStore()
+      store.loading = true
+      const spy = vi.spyOn(github, 'searchRepositories')
+
+      await store.search('react')
 
       expect(spy).not.toHaveBeenCalled()
     })
@@ -158,18 +156,6 @@ describe('useRepoSearchStore', () => {
       expect(spy).not.toHaveBeenCalled()
     })
 
-    it('updates rate limit store with response headers', async () => {
-      vi.spyOn(github, 'searchRepositories')
-        .mockResolvedValueOnce(makeSearchResult())
-        .mockResolvedValueOnce(makeSearchResult())
-
-      const store = useRepoSearchStore()
-      const rateLimitStore = useRateLimitStore()
-      await store.search('react')
-      await store.goToPage(2)
-
-      expect(rateLimitStore.remaining).toBe(59)
-    })
   })
 
   describe('totalPages', () => {

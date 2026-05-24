@@ -1,5 +1,6 @@
 import axios from 'axios'
 import type { GetRespositoryResponse, SearchRepositoriesResponse } from '@/types/github'
+import { useRateLimitStore } from '@/stores/rateLimit'
 
 export const PER_PAGE = 10
 
@@ -11,6 +12,21 @@ const api = axios.create({
     Accept: 'application/vnd.github.v3+json',
   },
 })
+
+api.interceptors.response.use(
+  (res) => {
+    useRateLimitStore().update(res.headers as Record<string, string>)
+
+    return res
+  },
+  (err) => {
+    if (axios.isAxiosError(err) && err.response?.headers) {
+      useRateLimitStore().update(err.response.headers as Record<string, string>)
+    }
+
+    return Promise.reject(err)
+  },
+)
 
 export const searchRepositories = async (query: string, page = 1): Promise<ApiResult<SearchRepositoriesResponse>> => {
   const res = await api.get<SearchRepositoriesResponse>('/search/repositories', {

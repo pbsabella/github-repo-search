@@ -108,11 +108,7 @@ const details = computed<RepoDetail[]>(() => {
               <VRow density="compact">
                 <!-- TODO: Container query? -->
                 <VCol cols="12" md="6" v-for="detail in details" :key="detail.code">
-                  <StatCard
-                    :label="detail.label"
-                    :value="detail.value"
-                    :icon="detail.icon"
-                  />
+                  <StatCard :label="detail.label" :value="detail.value" :icon="detail.icon" />
                 </VCol>
               </VRow>
             </VCol>
@@ -123,7 +119,9 @@ const details = computed<RepoDetail[]>(() => {
                   <p class="repo-details__subsection-title">Topics</p>
                 </VCol>
                 <VCol cols="12" class="repo-details__topics">
-                  <VChip v-for="topic of repo.topics" :key="topic" size="x-small">{{ topic }}</VChip>
+                  <VChip v-for="topic of repo.topics" :key="topic" size="x-small">
+                    {{ topic }}
+                  </VChip>
                 </VCol>
               </VRow>
             </VCol>
@@ -147,8 +145,20 @@ const details = computed<RepoDetail[]>(() => {
     </template>
 
     <VContainer v-else>
-      <VEmptyState text="Select a repository to view details." />
-    </VContainer>
+      <VEmptyState
+        text-width="360"
+        text="Once results appear on the left, select a repository to view details."
+      >
+        <template #media>
+          <VAvatar rounded="sm" size="48" variant="tonal">
+            <VIcon size="24">{{ 'mdi-package-variant' }}</VIcon>
+          </VAvatar>
+        </template>
+        <template #title>
+          <h2 class="repo-details__empty-title">Nothing to show</h2>
+        </template>
+      </VEmptyState></VContainer
+    >
   </div>
 </template>
 
@@ -204,6 +214,11 @@ const details = computed<RepoDetail[]>(() => {
     display: flex;
     gap: var(--space-1);
     flex-wrap: wrap;
+  }
+
+  &__empty-title {
+    font-size: var(--font-size-h6);
+    margin-top: var(--space-4);
   }
 }
 </style>
