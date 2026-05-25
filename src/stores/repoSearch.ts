@@ -3,11 +3,18 @@ import { defineStore } from 'pinia'
 import { searchRepositories, getRepository, getLanguages, PER_PAGE } from '@/services/github'
 import type { GitHubRepo, LanguagesData } from '@/types/github'
 
+type DetailsCacheEntry = {
+  repo: GitHubRepo
+  languages: LanguagesData | null
+}
+
 // The GitHub REST API provides up to 1,000 results for each search
 // see https://docs.github.com/en/rest/search/search
 const GITHUB_MAX_RESULTS = 1000
 
 export const useRepoSearchStore = defineStore('repoSearch', () => {
+  const detailsCache = new Map<string, DetailsCacheEntry>()
+
   const query = ref('')
   const results = ref<GitHubRepo[]>([])
   const selectedRepo = ref<GitHubRepo | null>(null)
@@ -86,6 +93,16 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
       return
     }
 
+    const cacheKey = `${owner}/${repo}`
+    const cached = detailsCache.get(cacheKey)
+
+    if (cached) {
+      selectedRepo.value = cached.repo
+      repoLanguages.value = cached.languages
+
+      return
+    }
+
     detailsLoading.value = true
     detailsError.value = false
 
@@ -101,6 +118,11 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
 
       if (repoResult.status === 'fulfilled') {
         selectedRepo.value = repoResult.value.data
+
+        detailsCache.set(cacheKey, {
+          repo: repoResult.value.data,
+          languages: langResult.status === 'fulfilled' ? langResult.value.data : null,
+        })
       } else {
         detailsError.value = true
       }
@@ -118,9 +140,9 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
       return
     }
 
-    const [owner, name] = selectedRepo.value.full_name.split('/')
+    const [, name] = selectedRepo.value.full_name.split('/')
 
-    fetchRepoDetails(owner!, name!)
+    fetchRepoDetails(selectedRepo.value.owner.login, name!)
   }
 
   const selectRepo = (repo: GitHubRepo | null) => {
@@ -129,7 +151,7 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
     detailsError.value = false
 
     if (repo) {
-      fetchRepoDetails(repo.owner.login, repo.full_name.split('/')[1]!)
+      void fetchRepoDetails(repo.owner.login, repo.full_name.split('/')[1]!)
     }
   }
 

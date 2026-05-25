@@ -34,12 +34,22 @@ export const useRateLimitStore = defineStore('rateLimit', () => {
     const r = headers['x-ratelimit-remaining']
     const t = headers['x-ratelimit-reset']
 
+    const newReset = t ? parseInt(t, 10) : 0
+    const isNewWindow = newReset !== 0 && newReset !== target.resetAt
+
     if (l) {
       target.limit = parseInt(l, 10)
     }
 
     if (r) {
-      target.remaining = parseInt(r, 10)
+      const newRemaining = parseInt(r, 10)
+
+      // Handle two core API calls (getRepository and getLanguages) where response can be out of order
+      // Same window: higher remaining values never overwrite lower ones
+      // New window (reset changed): remaining correctly resets to higher values
+      if (!target.hasData || isNewWindow || newRemaining < target.remaining) {
+        target.remaining = newRemaining
+      }
     }
 
     if (t) {

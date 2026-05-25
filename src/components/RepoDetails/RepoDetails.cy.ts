@@ -1,8 +1,6 @@
 import RepoDetails from './RepoDetails.vue'
 import { mockRepositories, archivedRepo } from '../../../cypress/fixtures/repositories'
 import { formatCompactCount, formatDate } from '@/utils/format'
-import { useRepoSearchStore } from '@/stores/repoSearch'
-import { useRateLimitStore } from '@/stores/rateLimit'
 
 const mockRepo = mockRepositories[0];
 
@@ -90,40 +88,27 @@ describe('<RepoDetails />', () => {
       .findByText('N/A').should('be.visible')
   })
 
-  it('shows a progress bar when detailsLoading is true', () => {
-    cy.mount(RepoDetails, { props: { repo: mockRepo } })
-      .then(() => {
-        const store = useRepoSearchStore()
-        store.detailsLoading = true
-      })
+  it('shows a progress bar when loading is true', () => {
+    cy.mount(RepoDetails, { props: { repo: mockRepo, loading: true } })
 
     cy.findByRole('progressbar', { name: 'Loading repository details' }).should('be.visible')
   })
 
-  it('shows an error alert with retry button when detailsError is true', () => {
-    cy.mount(RepoDetails, { props: { repo: mockRepo } })
-      .then(() => {
-        const store = useRepoSearchStore()
-        store.detailsError = true
-      })
+  it('shows a network error alert with retry button when errorVariant is "network"', () => {
+    const onRetry = cy.spy().as('retry')
+
+    cy.mount(RepoDetails, {
+      props: { repo: mockRepo, errorVariant: 'network' },
+      attrs: { onRetry },
+    })
 
     cy.findByText('Failed to load details.').should('be.visible')
-    cy.findByRole('button', { name: 'Retry' }).should('be.visible')
+    cy.findByRole('button', { name: 'Retry' }).should('be.visible').click()
+    cy.get('@retry').should('have.been.calledOnce')
   })
 
-  it('shows a rate-limit warning when core pool is empty', () => {
-    cy.mount(RepoDetails, { props: { repo: mockRepo } })
-      .then(() => {
-        const store = useRepoSearchStore()
-        store.detailsError = true
-        const rateLimit = useRateLimitStore()
-        rateLimit.update({
-          'x-ratelimit-resource': 'core',
-          'x-ratelimit-remaining': '0',
-          'x-ratelimit-limit': '5000',
-          'x-ratelimit-reset': '0',
-        })
-      })
+  it('shows a rate-limit warning when errorVariant is "rate-limit"', () => {
+    cy.mount(RepoDetails, { props: { repo: mockRepo, errorVariant: 'rate-limit' } })
 
     cy.findByText('Core rate limit reached.').should('be.visible')
   })
@@ -153,12 +138,13 @@ describe('<RepoDetails />', () => {
     cy.findByText('Archived').should('be.visible')
   })
 
-  it('renders language items when repoLanguages are set', () => {
-    cy.mount(RepoDetails, { props: { repo: mockRepo } })
-      .then(() => {
-        const store = useRepoSearchStore()
-        store.repoLanguages = { JavaScript: 5000, TypeScript: 3000, HTML: 2000 }
-      })
+  it('renders language items when languages prop is set', () => {
+    cy.mount(RepoDetails, {
+      props: {
+        repo: mockRepo,
+        languages: { JavaScript: 5000, TypeScript: 3000, HTML: 2000 },
+      },
+    })
 
     cy.findByText('JavaScript').should('be.visible')
     cy.findByText('TypeScript').should('be.visible')
@@ -193,10 +179,10 @@ describe('<RepoDetails />', () => {
 
     cy.mount(RepoDetails, { props: { repo: mockRepo } })
 
-    cy.findByRole('button', { name: 'HTTPS appended action' }).click()
+    cy.findByRole('button', { name: 'Copy https to clipboard' }).click()
 
     cy.window().its('navigator.clipboard.writeText').should('be.calledWith', mockRepo.clone_url)
-    cy.get('.mdi-check').should('be.visible')
+    cy.get('[data-testid="copy-confirmed"]').should('be.visible')
   })
 
   it('does not show the homepage button when homepage is null', () => {
@@ -221,7 +207,7 @@ describe('<RepoDetails />', () => {
       .findByText('-').should('be.visible')
   })
 
-  it('does not render the languages section when repoLanguages are not set', () => {
+  it('does not render the languages section when languages prop is not set', () => {
     cy.mount(RepoDetails, {
       props: {
         repo: mockRepo,

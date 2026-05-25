@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import DetailSection from '@/components/DetailSection/DetailSection.vue'
-import type { GitHubRepo } from '@/types/github'
+import type { GitHubRepo, LanguagesData } from '@/types/github'
 import { formatCompactCount, formatDate } from '@/utils/format'
 import { langColor } from '@/utils/color'
-import { useRepoSearchStore } from '@/stores/repoSearch'
-import { useRateLimitStore } from '@/stores/rateLimit'
 
 type RepoDetail = {
   code: string
@@ -28,10 +26,14 @@ type CloneField = {
 
 const props = defineProps<{
   repo?: GitHubRepo | null
+  loading?: boolean
+  languages?: LanguagesData | null
+  errorVariant?: 'rate-limit' | 'network' | null
 }>()
 
-const store = useRepoSearchStore()
-const rateLimitStore = useRateLimitStore()
+const emit = defineEmits<{
+  retry: []
+}>()
 
 const copiedKey = ref<'https' | 'ssh' | null>(null)
 
@@ -56,13 +58,13 @@ const cloneFields = computed<CloneField[]>(() => {
 })
 
 const languageItems = computed(() => {
-  const data = store.repoLanguages
+  const data = props.languages
 
   if (!data) {
     return []
   }
 
-  const total = Object.values(data).reduce((sum, n) => sum + n, 0)
+  const total = Object.values(data).reduce((sum: number, n: number) => sum + n, 0)
 
   if (total === 0) {
     return []
@@ -89,7 +91,7 @@ const featureBadges = computed<Badge[]>(() => {
   }
 
   if (props.repo.is_template) {
-    badges.push({ label: 'Template', icon: 'mdi-content-copy-outline' })
+    badges.push({ label: 'Template', icon: 'mdi-content-copy' })
   }
 
   if (props.repo.has_pages) {
@@ -180,7 +182,7 @@ const copyToClipboard = async (text: string, key: 'https' | 'ssh') => {
     <template v-if="repo">
       <div class="repo-details__progress">
         <VProgressLinear
-          v-if="store.detailsLoading"
+          v-if="loading"
           aria-label="Loading repository details"
           indeterminate
           color="primary"
@@ -188,17 +190,23 @@ const copyToClipboard = async (text: string, key: 'https' | 'ssh') => {
         />
       </div>
 
-      <div v-if="store.detailsError" class="repo-details__error">
+      <div v-if="errorVariant" class="repo-details__error">
         <VAlert
           variant="tonal"
+          :type="errorVariant === 'rate-limit' ? 'warning' : 'error'"
           density="compact"
-          :type="rateLimitStore.core.isEmpty ? 'warning' : 'error'"
-          :text="
-            rateLimitStore.core.isEmpty ? 'Core rate limit reached.' : 'Failed to load details.'
-          "
         >
           <template #append>
-            <VBtn size="small" variant="text" @click="store.retryDetails()">Retry</VBtn>
+            <VBtn size="small" variant="text" @click="emit('retry')">Retry</VBtn>
+          </template>
+          <template #text>
+            <p class="repo-details__error-text">
+              {{
+                errorVariant === 'rate-limit'
+                  ? 'Core rate limit reached.'
+                  : 'Failed to load details.'
+              }}
+            </p>
           </template>
         </VAlert>
       </div>
@@ -336,9 +344,16 @@ const copyToClipboard = async (text: string, key: 'https' | 'ssh') => {
                   :label="field.label"
                   hide-details
                   class="repo-details__clone-field"
-                  :append-inner-icon="copiedKey === field.key ? 'mdi-check' : 'mdi-content-copy'"
-                  @click:append-inner="copyToClipboard(field.url, field.key)"
-                />
+                >
+                  <template #append-inner>
+                    <VIcon
+                      :icon="copiedKey === field.key ? 'mdi-check' : 'mdi-content-copy'"
+                      :data-testid="copiedKey === field.key ? 'copy-confirmed' : undefined"
+                      :aria-label="`Copy ${field.key} to clipboard`"
+                      @click="copyToClipboard(field.url, field.key)"
+                    />
+                  </template>
+                </VTextField>
               </div>
             </DetailSection>
           </VCol>
@@ -520,6 +535,10 @@ const copyToClipboard = async (text: string, key: 'https' | 'ssh') => {
 
   &__error {
     margin-bottom: var(--space-3);
+  }
+
+  &__error-text {
+    font-size: var(--font-size-body-sm);
   }
 
   &__empty-title {

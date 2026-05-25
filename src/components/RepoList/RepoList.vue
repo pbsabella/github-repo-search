@@ -18,6 +18,7 @@ const emit = defineEmits<{
       v-for="repo in items"
       class="repo-list__item"
       active-class="repo-list__item--active"
+      :aria-label="`View details for ${repo.full_name}`"
       rounded="0"
       variant="flat"
       :key="repo.id"

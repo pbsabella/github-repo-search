@@ -1,12 +1,56 @@
 # GitHub Repo Search
 
+## Overview
+
 Search GitHub repositories. Built with Vue 3, Vite, TypeScript, and Vuetify.
+
+Requests are unauthenticated by default (rate limits below). Add a `VITE_GITHUB_TOKEN` in `.env.local` for higher limits in development mode.
+
+### Search repositories
+
+- Rate limit: 10 requests per minute unauthenticated (30/min with token)
+- Trigger: GET `/search/repositories` on button click or keyboard Enter when search field is not empty
+- Display: 10 items per page; additional request when navigating pages
+- URL persistence: Query string and page are persisted in the URL to enable sharing and bookmarking
+- Caching: No in-memory caching for search results
+
+### Get repository details
+
+- Rate limit: 60 requests per hour unauthenticated (5,000/hr with token)
+- Trigger: Clicking a search result fetches additional details via two parallel requests:
+  - GET `/repos/${owner}/${repo}` for repository metadata
+  - GET `/repos/${owner}/${repo}/languages` for language breakdown
+- Progressive display: Pre-fills data from the search response, then updates as details arrive
+- Caching: Results are cached in memory; repeated clicks on the same repo don't trigger new requests
+
+### Rate limit indicators
+
+- Tracked resources: `search` and `core` pools displayed in the header
+- Start as unknown/hidden until the first API response is received
+- Axios interceptor reads `x-ratelimit-*` response headers and updates the counters automatically
+- Color-coded: Success (healthy) / Warning (low) / Error (exhausted)
+- Handles out-of-order responses: When parallel requests complete, the lowest remaining value is always preserved
+
+### Error Handling
+
+| Scenario | Behavior |
+|----------|----------|
+| Initial search fails | Error state with Retry button replaces the repository list |
+| Pagination request fails | Snackbar/toast displayed at the top; current page preserved |
+| Repository details fails | Alert displayed above the details section. Search-result data remains visible since basic repo info (name, owner, stars) was already populated from the search response. |
+
+### Responsive layout
+
+- Desktop (960px+): 2-panel fixed layout - list (left) + details (right)
+- Mobile: Repository details open in a bottom sheet (50vh min-height)
 
 ## Setup
 
 ```sh
 npm install
 ```
+
+Optional: Create an `.env.local` and set `VITE_GITHUB_TOKEN` to a personal access token to raise the rate limit to 5,000 requests/hr locally. The deployed version intentionally runs unauthenticated since `VITE_` variables are bundled client-side and would expose the token publicly.
 
 ## Development
 
@@ -45,13 +89,14 @@ Parts of this project were developed with AI assistance:
 - **Testing environment**: Setup the testing environments (`vitest` and `cypress`) to work with the rest of the dependencies like `testing-library`, `vuetify`, `pinia` and more.
 - **Generate design tokens**: Generate sensible scales for typography, font-weights, colors and spacing for `base.css`
 - **Vuetify support**: Guided the selection of UI components and props based on functional feature descriptions, and general debugging.
-- **Generate mocks & tests**: Specifically `repositories.ts`, and unit tests `*.spec.ts`
-- **Complete component & E2E tests**: Fill in gaps from written tests after audit
+- **Generate mocks & tests**: Specifically `repositories.ts`, and generate unit tests `*.spec.ts`
+- **Complete component & E2E tests**: Fill in gaps, adjustments to existing tests after regular audits and refactors
 - **Pinia store refinements**: Fill in gaps and general review and refactors
 - **Enrich the details section**:
   - Display feature badges
   - Display languages and programmatically calculate dot colors
   - Display and add clone repo text fields
 - **Architectural review & feedback**: State review cycle after major milestones
+- **`@mdi/font` to `@mdi/js` migration**: Audit and declare used icons to improve bundle size
 
 All AI-scaffolded code was thoroughly reviewed, tested, and manually validated before integration.

@@ -13,6 +13,13 @@ const { mdAndUp } = useDisplay()
 const store = useRepoSearchStore()
 const rateLimitStore = useRateLimitStore()
 const resetTime = computed(() => formatResetTime(rateLimitStore.search.resetAt))
+const errorVariant = computed<'rate-limit' | 'network' | null>(() => {
+  if (!store.detailsError) {
+    return null
+  }
+
+  return rateLimitStore.core.isEmpty ? 'rate-limit' : 'network'
+})
 const route = useRoute()
 const router = useRouter()
 
@@ -97,7 +104,7 @@ watch(
 <template>
   <VContainer class="search-dashboard__header" fluid>
     <VRow align="center">
-      <VCol cols="8" md="6">
+      <VCol cols="7" md="5">
         <VTextField
           v-model="store.query"
           clearable
@@ -110,6 +117,18 @@ watch(
           prepend-inner-icon="mdi-magnify"
           @keyup.enter="handleSearch"
         />
+      </VCol>
+      <VCol cols="auto">
+        <VBtn
+          density="compact"
+          height="40"
+          variant="flat"
+          color="primary"
+          aria-label="Search"
+          @click="handleSearch"
+        >
+          Search
+        </VBtn>
       </VCol>
       <VCol cols="4">
         <p
@@ -175,7 +194,7 @@ watch(
             </template>
           </template>
           <template #actions>
-            <VBtn variant="flat" color="primary" @click="handleSearch">Retry</VBtn>
+            <VBtn variant="flat" color="primary" size="small" @click="handleSearch">Retry</VBtn>
           </template>
         </VEmptyState>
       </VContainer>
@@ -235,7 +254,13 @@ watch(
     </VCol>
 
     <VCol v-if="mdAndUp" cols="8">
-      <RepoDetails :repo="store.selectedRepo" />
+      <RepoDetails
+        :repo="store.selectedRepo"
+        :loading="store.detailsLoading"
+        :error-variant="errorVariant"
+        :languages="store.repoLanguages"
+        @retry="store.retryDetails()"
+      />
     </VCol>
 
     <VBottomSheet
@@ -244,7 +269,13 @@ watch(
       @update:model-value="(v) => !v && store.selectRepo(null)"
     >
       <VSheet min-height="50vh">
-        <RepoDetails :repo="store.selectedRepo" />
+        <RepoDetails
+          :repo="store.selectedRepo"
+          :loading="store.detailsLoading"
+          :error-variant="errorVariant"
+          :languages="store.repoLanguages"
+          @retry="store.retryDetails()"
+        />
       </VSheet>
     </VBottomSheet>
   </VRow>

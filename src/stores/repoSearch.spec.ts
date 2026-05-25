@@ -309,6 +309,20 @@ describe('useRepoSearchStore', () => {
       expect(store.detailsError).toBe(true)
     })
 
+    it('serves from cache on second call to the same repo', async () => {
+      const getRepoSpy = vi.spyOn(github, 'getRepository').mockResolvedValue({ data: enrichedRepo, headers: mockHeaders })
+      vi.spyOn(github, 'getLanguages').mockResolvedValue({ data: mockLanguages, headers: mockHeaders })
+
+      const store = useRepoSearchStore()
+      store.selectedRepo = mockRepo
+      await store.fetchRepoDetails('facebook', 'react')
+
+      getRepoSpy.mockClear()
+      await store.fetchRepoDetails('facebook', 'react')
+
+      expect(getRepoSpy).not.toHaveBeenCalled()
+    })
+
     it('getLanguages failure alone does not set detailsError', async () => {
       vi.spyOn(github, 'getRepository').mockResolvedValue({ data: enrichedRepo, headers: mockHeaders })
       vi.spyOn(github, 'getLanguages').mockRejectedValue(new Error('API error'))

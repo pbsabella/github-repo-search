@@ -14,7 +14,6 @@ import { VApp } from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import { vuetifyOptions } from '@/plugins/vuetify'
 import 'vuetify/styles'
-import '@mdi/font/css/materialdesignicons.css'
 import { routes } from '@/router'
 
 const vuetify = createVuetify({

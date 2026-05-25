@@ -131,4 +131,42 @@ describe('useRateLimitStore', () => {
       expect(store.core.isEmpty).toBe(true)
     })
   })
+
+  describe('concurrent updates (race condition prevention)', () => {
+    it('allows remaining to increase when reset window changes', () => {
+      const store = useRateLimitStore()
+      const headersOldWindow = {
+        ...headers('core', 1, 60),
+        'x-ratelimit-reset': '1700000000',
+      }
+      const headersNewWindow = {
+        ...headers('core', 60, 60),
+        'x-ratelimit-reset': '1700003600',
+      }
+
+      store.update(headersOldWindow)
+      expect(store.core.remaining).toBe(1)
+
+      store.update(headersNewWindow)
+      expect(store.core.remaining).toBe(60)
+    })
+
+    it('handles out-of-order concurrent responses correctly (race condition prevention)', () => {
+      const store = useRateLimitStore()
+      const reqSentFirst = {
+        ...headers('core', 58, 60),
+        'x-ratelimit-reset': '1700000000',
+      }
+      const reqSentSecond = {
+        ...headers('core', 57, 60),
+        'x-ratelimit-reset': '1700000000',
+      }
+
+      store.update(reqSentSecond)
+      expect(store.core.remaining).toBe(57)
+
+      store.update(reqSentFirst)
+      expect(store.core.remaining).toBe(57)
+    })
+  })
 })

@@ -13,6 +13,13 @@ const api = axios.create({
   },
 })
 
+// Will only work on development .env.local
+const token = import.meta.env.VITE_GITHUB_TOKEN
+
+if (token) {
+  api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+}
+
 const interceptorId = api.interceptors.response.use(
   (res) => {
     if (res.headers['x-ratelimit-resource']) {

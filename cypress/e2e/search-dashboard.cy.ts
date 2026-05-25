@@ -137,7 +137,7 @@ describe('SearchDashboard view', () => {
 
     it('displays the repo details side panel when a result card is clicked', () => {
       cy.mockGitHubRepo()
-      cy.findByText('facebook/react').click()
+      cy.findByRole('listitem', { name: 'View details for facebook/react' }).click()
       cy.wait('@getRepo')
 
       cy.findByRole('link', { name: 'Open on GitHub' }).should('be.visible')
@@ -145,7 +145,7 @@ describe('SearchDashboard view', () => {
 
     it('displays the partial data and error message when the repo API returns a 500 and attempts retry on click', () => {
       cy.mockGitHubRepo({ statusCode: 500 })
-      cy.findByText('facebook/react').click()
+      cy.findByRole('listitem', { name: 'View details for facebook/react' }).click()
 
       cy.findByRole('link', { name: 'Open on GitHub' }).should('be.visible')
 
