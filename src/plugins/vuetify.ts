@@ -6,7 +6,8 @@ const vuetifyOptions = {
     themes: {
       light: {
         colors: {
-          warning: '#FFC107',
+          primary: '#7563DE',
+          warning: '#ED6C02',
           success: '#2E7D32',
           error: '#C62828',
         },

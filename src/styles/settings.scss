@@ -1,31 +1,6 @@
-$font-family:
-  'Inter',
-  -apple-system,
-  BlinkMacSystemFont,
-  'Segoe UI',
-  Roboto,
-  Oxygen,
-  Ubuntu,
-  Cantarell,
-  'Fira Sans',
-  'Droid Sans',
-  'Helvetica Neue',
-  sans-serif;
-
-$heading-font-family:
-  'Inter',
-  -apple-system,
-  BlinkMacSystemFont,
-  'Segoe UI',
-  Roboto,
-  Oxygen,
-  Ubuntu,
-  Cantarell,
-  'Fira Sans',
-  'Droid Sans',
-  'Helvetica Neue',
-  sans-serif;
-
-$font-size-root: 15px;
-
-$line-height-root: 1.6;
+@use 'vuetify/settings' with (
+  $chip-font-weight: 500,
+  $skeleton-loader-button-width: 80px,
+  $skeleton-loader-avatar-height: 24px,
+  $skeleton-loader-avatar-width: 24px
+);

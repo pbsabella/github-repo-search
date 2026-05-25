@@ -7,6 +7,7 @@
     "../src/**/*.cy.ts"
   ],
   "compilerOptions": {
+    "strict": true,
     "isolatedModules": false,
     "types": [
       "cypress",

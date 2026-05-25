@@ -1,40 +1,55 @@
-import { ref, computed } from 'vue'
+import { reactive } from 'vue'
 import { defineStore } from 'pinia'
 
+const createPool = (lowThreshold: number) => {
+  return reactive({
+    limit: 0,
+    remaining: 0,
+    resetAt: 0,
+    get hasData() {
+      return this.limit > 0
+    },
+    get isLow() {
+      return this.hasData && this.remaining < lowThreshold
+    },
+    get isEmpty() {
+      return this.hasData && this.remaining === 0
+    },
+  })
+}
+
 export const useRateLimitStore = defineStore('rateLimit', () => {
-  const limit = ref<number>(0)
-  const remaining = ref<number>(0)
-  const resetAt = ref<number>(0) // zero means no call made yet
+  const search = createPool(5)   // 10–30/min -> low at < 5
+  const core = createPool(10)    // 60–5000/hr -> low at < 10
 
   const update = (headers: Record<string, string>) => {
+    const resource = headers['x-ratelimit-resource']
+    const target = resource === 'search' ? search : resource === 'core' ? core : null
+
+    if (!target) {
+      return
+    }
+
     const l = headers['x-ratelimit-limit']
     const r = headers['x-ratelimit-remaining']
     const t = headers['x-ratelimit-reset']
 
     if (l) {
-      limit.value = parseInt(l, 10)
+      target.limit = parseInt(l, 10)
     }
 
     if (r) {
-      remaining.value = parseInt(r, 10)
+      target.remaining = parseInt(r, 10)
     }
 
     if (t) {
-      resetAt.value = parseInt(t, 10)
+      target.resetAt = parseInt(t, 10)
     }
   }
 
-  const hasData = computed(() => limit.value > 0)
-  const isLow = computed(() => hasData.value && remaining.value < 10)
-  const isEmpty = computed(() => hasData.value && remaining.value === 0)
-
   return {
-    hasData,
-    isEmpty,
-    isLow,
-    limit,
-    remaining,
-    resetAt,
+    search,
+    core,
     update,
   }
 })

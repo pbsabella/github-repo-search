@@ -47,6 +47,11 @@ Parts of this project were developed with AI assistance:
 - **Vuetify support**: Guided the selection of UI components and props based on functional feature descriptions, and general debugging.
 - **Generate mocks & tests**: Specifically `repositories.ts`, and unit tests `*.spec.ts`
 - **Complete component & E2E tests**: Fill in gaps from written tests after audit
+- **Pinia store refinements**: Fill in gaps and general review and refactors
+- **Enrich the details section**:
+  - Display feature badges
+  - Display languages and programmatically calculate dot colors
+  - Display and add clone repo text fields
 - **Architectural review & feedback**: State review cycle after major milestones
 
 All AI-scaffolded code was thoroughly reviewed, tested, and manually validated before integration.

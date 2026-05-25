@@ -1,49 +1,75 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useRateLimitStore } from '@/stores/rateLimit'
 
 const store = useRateLimitStore()
 
-const props = defineProps<{
+defineProps<{
   compact?: boolean
 }>()
 
-const chipColor = computed(() => {
-  if (!store.hasData) {
+const getColor = (pool: { hasData: boolean; isEmpty: boolean; isLow: boolean }) => {
+  if (!pool.hasData) {
     return
   }
 
-  if (store.isEmpty) {
+  if (pool.isEmpty) {
     return 'error'
   }
 
-  if (store.isLow) {
+  if (pool.isLow) {
     return 'warning'
   }
 
   return 'success'
-})
+}
 </script>
 
 <template>
   <VAppBar class="the-header" flat border density="compact">
-    <VAppBarTitle><h1 class="the-header__title">GitHub Repo Search</h1></VAppBarTitle>
+    <VAppBarTitle>
+      <h1 class="the-header__title">GitHub Repo Search</h1>
+    </VAppBarTitle>
+
     <template #append>
-      <VChip
-        :color="chipColor"
-        variant="flat"
-        prepend-icon="mdi-timer"
-        size="small"
-        aria-label="API rate limit"
-      >
-        <div class="the-header__stats">
-          <template v-if="store.hasData">
-            <span v-if="!props.compact">Rate limit: </span>
-            <span>{{ store.remaining }} / {{ store.limit }}</span>
+      <div class="the-header__chips">
+        <VChip
+          :color="getColor(store.search)"
+          variant="flat"
+          prepend-icon="mdi-magnify"
+          size="x-small"
+          aria-label="Search rate limit"
+        >
+          <template v-if="store.search.hasData">
+            <template v-if="compact">
+              {{ store.search.remaining }}
+            </template>
+            <template v-else>
+              <span>Search:&nbsp;</span>
+              <span>{{ store.search.remaining }} / {{ store.search.limit }}</span>
+            </template>
           </template>
-          <span v-else>—</span>
-        </div>
-      </VChip>
+          <span v-else>-</span>
+        </VChip>
+
+        <VChip
+          :color="getColor(store.core)"
+          variant="flat"
+          prepend-icon="mdi-database-outline"
+          size="x-small"
+          aria-label="Core rate limit"
+        >
+          <template v-if="store.core.hasData">
+            <template v-if="compact">
+              {{ store.core.remaining }}
+            </template>
+            <template v-else>
+              <span>Core:&nbsp;</span>
+              <span>{{ store.core.remaining }} / {{ store.core.limit }}</span>
+            </template>
+          </template>
+          <span v-else>-</span>
+        </VChip>
+      </div>
     </template>
   </VAppBar>
 </template>
@@ -57,10 +83,9 @@ const chipColor = computed(() => {
     font-size: var(--font-size-body);
   }
 
-  &__stats {
-    margin-left: var(--space-1);
+  &__chips {
     display: flex;
-    align-items: center;
+    flex-wrap: wrap;
     gap: var(--space-1);
   }
 }

@@ -23,6 +23,15 @@ const mockRepo = {
   license: { spdx_id: 'MIT', name: 'MIT License' },
   created_at: '2013-05-24T16:15:54Z',
   updated_at: '2026-01-01T00:00:00Z',
+  pushed_at: '2026-01-01T00:00:00Z',
+  forks_count: 500,
+  homepage: null,
+  clone_url: 'https://github.com/facebook/react.git',
+  ssh_url: 'git@github.com:facebook/react.git',
+  is_template: false,
+  has_pages: false,
+  has_discussions: false,
+  has_wiki: false,
   topics: ['react'],
   owner: {
     login: 'facebook',
@@ -32,7 +41,7 @@ const mockRepo = {
 }
 
 const makeSearchResult = (overrides: Partial<SearchRepositoriesResponse> = {}) => ({
-  data: { total_count: 1, items: [mockRepo], ...overrides },
+  data: { total_count: 1, incomplete_results: false, items: [mockRepo], ...overrides },
   headers: mockHeaders,
 })
 
@@ -60,13 +69,13 @@ describe('useRepoSearchStore', () => {
       vi.spyOn(github, 'searchRepositories').mockResolvedValue(makeSearchResult())
 
       const store = useRepoSearchStore()
-      store.page = 3 as unknown as typeof store.page
+      store.page = 3
       await store.search('react')
 
       expect(store.page).toBe(1)
     })
 
-    it('caps totalCount at 1000', async () => {
+    it('stores the raw totalCount and caps navigableCount at 1000', async () => {
       vi.spyOn(github, 'searchRepositories').mockResolvedValue(
         makeSearchResult({ total_count: 9999, items: [mockRepo] }),
       )
@@ -74,7 +83,8 @@ describe('useRepoSearchStore', () => {
       const store = useRepoSearchStore()
       await store.search('react')
 
-      expect(store.totalCount).toBe(1000)
+      expect(store.totalCount).toBe(9999)
+      expect(store.navigableCount).toBe(1000)
     })
 
     it('sets error and clears results on failure', async () => {
@@ -122,7 +132,7 @@ describe('useRepoSearchStore', () => {
       const page2Repo = { ...mockRepo, id: 2, full_name: 'vuejs/core' }
       vi.spyOn(github, 'searchRepositories')
         .mockResolvedValueOnce(makeSearchResult())
-        .mockResolvedValueOnce({ data: { total_count: 1, items: [page2Repo] }, headers: mockHeaders })
+        .mockResolvedValueOnce({ data: { total_count: 1, incomplete_results: false, items: [page2Repo] }, headers: mockHeaders })
 
       const store = useRepoSearchStore()
       await store.search('react')
@@ -183,6 +193,158 @@ describe('useRepoSearchStore', () => {
       store.selectRepo(mockRepo)
       store.selectRepo(null)
       expect(store.selectedRepo).toBeNull()
+    })
+  })
+
+  describe('fetchRepoDetails()', () => {
+    const enrichedRepo = {
+      ...mockRepo,
+      clone_url: 'https://github.com/facebook/react.git',
+      ssh_url: 'git@github.com:facebook/react.git',
+      forks_count: 42,
+    }
+    const mockLanguages = { JavaScript: 5000, TypeScript: 2000 }
+
+    it('updates selectedRepo and repoLanguages on success', async () => {
+      vi.spyOn(github, 'getRepository').mockResolvedValue({ data: enrichedRepo, headers: mockHeaders })
+      vi.spyOn(github, 'getLanguages').mockResolvedValue({ data: mockLanguages, headers: mockHeaders })
+
+      const store = useRepoSearchStore()
+      store.selectedRepo = mockRepo
+      await store.fetchRepoDetails('facebook', 'react')
+
+      expect(store.selectedRepo).toEqual(enrichedRepo)
+      expect(store.repoLanguages).toEqual(mockLanguages)
+      expect(store.detailsLoading).toBe(false)
+    })
+
+    it('sets detailsLoading true while fetching then clears it', async () => {
+      let resolveRepo!: (v: { data: typeof enrichedRepo; headers: typeof mockHeaders }) => void
+      vi.spyOn(github, 'getRepository').mockReturnValue(new Promise(r => { resolveRepo = r }))
+      vi.spyOn(github, 'getLanguages').mockResolvedValue({ data: mockLanguages, headers: mockHeaders })
+
+      const store = useRepoSearchStore()
+      store.selectedRepo = mockRepo
+      const fetchPromise = store.fetchRepoDetails('facebook', 'react')
+
+      expect(store.detailsLoading).toBe(true)
+      resolveRepo({ data: enrichedRepo, headers: mockHeaders })
+      await fetchPromise
+
+      expect(store.detailsLoading).toBe(false)
+    })
+
+    it('does nothing when selectedRepo is null', async () => {
+      const spy = vi.spyOn(github, 'getRepository')
+      const store = useRepoSearchStore()
+      await store.fetchRepoDetails('facebook', 'react')
+
+      expect(spy).not.toHaveBeenCalled()
+    })
+
+    it('ignores response if selection changed mid-flight', async () => {
+      const otherRepo = { ...mockRepo, id: 2, full_name: 'vuejs/core' }
+      let resolveFirst!: (v: { data: typeof enrichedRepo; headers: typeof mockHeaders }) => void
+      vi.spyOn(github, 'getRepository')
+        .mockReturnValueOnce(new Promise(r => { resolveFirst = r }))
+        .mockResolvedValueOnce({ data: otherRepo, headers: mockHeaders })
+      vi.spyOn(github, 'getLanguages').mockResolvedValue({ data: mockLanguages, headers: mockHeaders })
+
+      const store = useRepoSearchStore()
+      store.selectedRepo = mockRepo
+      const firstFetch = store.fetchRepoDetails('facebook', 'react')
+
+      store.selectedRepo = otherRepo
+
+      resolveFirst({ data: enrichedRepo, headers: mockHeaders })
+      await firstFetch
+
+      expect(store.selectedRepo?.full_name).toBe('vuejs/core')
+    })
+
+    it('keeps selectedRepo from search when getRepository fails', async () => {
+      vi.spyOn(github, 'getRepository').mockRejectedValue(new Error('API error'))
+      vi.spyOn(github, 'getLanguages').mockResolvedValue({ data: mockLanguages, headers: mockHeaders })
+
+      const store = useRepoSearchStore()
+      store.selectedRepo = mockRepo
+      await store.fetchRepoDetails('facebook', 'react')
+
+      expect(store.selectedRepo).toEqual(mockRepo)
+      expect(store.repoLanguages).toEqual(mockLanguages)
+      expect(store.detailsLoading).toBe(false)
+    })
+
+    it('leaves repoLanguages null when getLanguages fails', async () => {
+      vi.spyOn(github, 'getRepository').mockResolvedValue({ data: enrichedRepo, headers: mockHeaders })
+      vi.spyOn(github, 'getLanguages').mockRejectedValue(new Error('API error'))
+
+      const store = useRepoSearchStore()
+      store.selectedRepo = mockRepo
+      await store.fetchRepoDetails('facebook', 'react')
+
+      expect(store.repoLanguages).toBeNull()
+      expect(store.selectedRepo).toEqual(enrichedRepo)
+    })
+
+    it('detailsError is false after a successful fetch', async () => {
+      vi.spyOn(github, 'getRepository').mockResolvedValue({ data: enrichedRepo, headers: mockHeaders })
+      vi.spyOn(github, 'getLanguages').mockResolvedValue({ data: mockLanguages, headers: mockHeaders })
+
+      const store = useRepoSearchStore()
+      store.selectedRepo = mockRepo
+      await store.fetchRepoDetails('facebook', 'react')
+
+      expect(store.detailsError).toBe(false)
+    })
+
+    it('detailsError is true when getRepository fails', async () => {
+      vi.spyOn(github, 'getRepository').mockRejectedValue(new Error('Network error'))
+      vi.spyOn(github, 'getLanguages').mockResolvedValue({ data: mockLanguages, headers: mockHeaders })
+
+      const store = useRepoSearchStore()
+      store.selectedRepo = mockRepo
+      await store.fetchRepoDetails('facebook', 'react')
+
+      expect(store.detailsError).toBe(true)
+    })
+
+    it('getLanguages failure alone does not set detailsError', async () => {
+      vi.spyOn(github, 'getRepository').mockResolvedValue({ data: enrichedRepo, headers: mockHeaders })
+      vi.spyOn(github, 'getLanguages').mockRejectedValue(new Error('API error'))
+
+      const store = useRepoSearchStore()
+      store.selectedRepo = mockRepo
+      await store.fetchRepoDetails('facebook', 'react')
+
+      expect(store.detailsError).toBe(false)
+    })
+
+    it('detailsError is cleared when selectRepo is called', async () => {
+      vi.spyOn(github, 'getRepository').mockRejectedValue(new Error('err'))
+      vi.spyOn(github, 'getLanguages').mockResolvedValue({ data: mockLanguages, headers: mockHeaders })
+
+      const store = useRepoSearchStore()
+      store.selectedRepo = mockRepo
+      await store.fetchRepoDetails('facebook', 'react')
+      expect(store.detailsError).toBe(true)
+
+      store.selectRepo(null)
+      expect(store.detailsError).toBe(false)
+    })
+
+    it('detailsError is cleared when search() is called', async () => {
+      vi.spyOn(github, 'getRepository').mockRejectedValue(new Error('err'))
+      vi.spyOn(github, 'getLanguages').mockResolvedValue({ data: mockLanguages, headers: mockHeaders })
+      vi.spyOn(github, 'searchRepositories').mockResolvedValue(makeSearchResult())
+
+      const store = useRepoSearchStore()
+      store.selectedRepo = mockRepo
+      await store.fetchRepoDetails('facebook', 'react')
+      expect(store.detailsError).toBe(true)
+
+      await store.search('vue')
+      expect(store.detailsError).toBe(false)
     })
   })
 })

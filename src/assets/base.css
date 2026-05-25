@@ -1,5 +1,7 @@
 :root {
-  --v-card-subtitle-opacity: 1;
+  --v-font-body: 'Inter', sans-serif;
+  --v-font-heading: 'Inter', sans-serif;
+  --v-card-subtitle-opacity: 1; /* Full opacity for card subtitles */
 
   /* Typography - font size scale (major third ratio 1.25) */
   --font-size-h1: 2.5rem;
@@ -46,6 +48,7 @@
   --color-link-hover: #094a8b;
   --color-border: rgba(60, 60, 60, 0.12);
   --color-divider: rgba(60, 60, 60, 0.12);
+  --color-background-muted: rgb(246, 246, 244);
 }
 
 *,

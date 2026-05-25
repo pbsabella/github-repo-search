@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { searchRepositories, PER_PAGE } from '@/services/github'
-import type { GitHubRepo } from '@/types/github'
+import { searchRepositories, getRepository, getLanguages, PER_PAGE } from '@/services/github'
+import type { GitHubRepo, LanguagesData } from '@/types/github'
 
 // The GitHub REST API provides up to 1,000 results for each search
 // see https://docs.github.com/en/rest/search/search
@@ -11,6 +11,9 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
   const query = ref('')
   const results = ref<GitHubRepo[]>([])
   const selectedRepo = ref<GitHubRepo | null>(null)
+  const repoLanguages = ref<LanguagesData | null>(null)
+  const detailsLoading = ref(false)
+  const detailsError = ref(false)
   const loading = ref(false)
   const error = ref<string | null>(null)
   const pageError = ref<string | null>(null)
@@ -18,7 +21,8 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
   const page = ref(1)
   const totalCount = ref(0)
 
-  const totalPages = computed(() => Math.ceil(totalCount.value / PER_PAGE))
+  const navigableCount = computed(() => Math.min(totalCount.value, GITHUB_MAX_RESULTS))
+  const totalPages = computed(() => Math.ceil(navigableCount.value / PER_PAGE))
 
   const search = async (q: string, pageNum = 1) => {
     if (!q?.trim() || loading.value) {
@@ -33,11 +37,15 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
     page.value = pageNum
     hasSearched.value = true
     selectedRepo.value = null
+    repoLanguages.value = null
+    detailsLoading.value = false
+    detailsError.value = false
 
     try {
       const { data } = await searchRepositories(q, pageNum)
+
       results.value = data.items
-      totalCount.value = Math.min(data.total_count, GITHUB_MAX_RESULTS)
+      totalCount.value = data.total_count
     } catch (e: unknown) {
       error.value = e instanceof Error ? e.message : 'Search GitHub failed'
     } finally {
@@ -55,11 +63,15 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
     page.value = newPage
     pageError.value = null
     selectedRepo.value = null
+    repoLanguages.value = null
+    detailsLoading.value = false
+    detailsError.value = false
 
     try {
       const { data } = await searchRepositories(query.value, page.value)
+
       results.value = data.items
-      totalCount.value = Math.min(data.total_count, GITHUB_MAX_RESULTS)
+      totalCount.value = data.total_count
       pageError.value = null
     } catch (e: unknown) {
       page.value = previousPage
@@ -69,22 +81,76 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
     }
   }
 
+  const fetchRepoDetails = async (owner: string, repo: string) => {
+    if (!selectedRepo.value) {
+      return
+    }
+
+    detailsLoading.value = true
+    detailsError.value = false
+
+    try {
+      const [repoResult, langResult] = await Promise.allSettled([
+        getRepository(owner, repo),
+        getLanguages(owner, repo),
+      ])
+
+      if (selectedRepo.value?.full_name !== `${owner}/${repo}`) {
+        return
+      }
+
+      if (repoResult.status === 'fulfilled') {
+        selectedRepo.value = repoResult.value.data
+      } else {
+        detailsError.value = true
+      }
+
+      if (langResult.status === 'fulfilled') {
+        repoLanguages.value = langResult.value.data
+      }
+    } finally {
+      detailsLoading.value = false
+    }
+  }
+
+  const retryDetails = () => {
+    if (!selectedRepo.value) {
+      return
+    }
+
+    const [owner, name] = selectedRepo.value.full_name.split('/')
+
+    fetchRepoDetails(owner!, name!)
+  }
+
   const selectRepo = (repo: GitHubRepo | null) => {
     selectedRepo.value = repo
+    repoLanguages.value = null
+    detailsError.value = false
+
+    if (repo) {
+      fetchRepoDetails(repo.owner.login, repo.full_name.split('/')[1]!)
+    }
   }
 
   return {
+    detailsError,
+    detailsLoading,
     error,
     hasSearched,
     loading,
+    navigableCount,
     page,
     pageError,
     query,
+    repoLanguages,
     results,
     selectedRepo,
     totalCount,
     totalPages,
+    fetchRepoDetails,
     goToPage,
+    retryDetails,
     search,
     selectRepo,
   }

@@ -20,6 +20,6 @@ beforeEach(() => {
     const message = `[cy.intercept] Unmocked GitHub API request: ${req.method} ${req.url} - add cy.mockGitHubSearch() to this test`
     Cypress.log({ name: 'WARNING', message, consoleProps: () => ({ url: req.url, method: req.method }) })
     console.warn(message)
-    req.reply({ statusCode: 500, body: { message: 'Unmocked GitHub API call — add cy.mockGitHubSearch() to this test' } })
+    req.reply({ statusCode: 500, body: { message: 'Unmocked GitHub API call - add cy.mockGitHubSearch() to this test' } })
   }).as('unmockedGitHubRequest')
 })

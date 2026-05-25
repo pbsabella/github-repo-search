@@ -13,7 +13,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <VList v-if="items.length" class="repo-list">
+  <VList v-if="items.length" class="repo-list" aria-label="Search results">
     <VListItem
       v-for="repo in items"
       class="repo-list__item"
@@ -26,7 +26,7 @@ const emit = defineEmits<{
     >
       <template #default>
         <div class="repo-list__content">
-          <VAvatar rounded="sm" size="20">
+          <VAvatar rounded="sm" size="24">
             <VImg :alt="repo.owner.login" :src="repo.owner.avatar_url" />
           </VAvatar>
           <div>
@@ -39,25 +39,32 @@ const emit = defineEmits<{
               <VChip
                 v-for="topic in repo.topics.slice(0, 5)"
                 :key="topic"
+                :color="selectedId === repo.id ? 'primary' : 'default'"
                 size="x-small"
                 variant="tonal"
-                color="primary"
               >
                 {{ topic }}
               </VChip>
             </div>
 
             <div class="repo-list__snapshots">
-              <VChip size="x-small" prepend-icon="mdi-code-tags" variant="text">
+              <VChip
+                v-if="repo.language"
+                size="x-small"
+                prepend-icon="mdi-code-tags"
+                variant="plain"
+              >
                 {{ repo.language }}
               </VChip>
-              <VChip size="x-small" prepend-icon="mdi-star" variant="text">
+              <VChip size="x-small" prepend-icon="mdi-star" variant="plain">
                 {{ formatCompactCount(repo.stargazers_count) }}
               </VChip>
-              <VChip size="x-small" prepend-icon="mdi-eye-outline" variant="text">
+              <VChip size="x-small" prepend-icon="mdi-eye-outline" variant="plain">
                 {{ formatCompactCount(repo.watchers_count) }}
               </VChip>
-              <VChip v-if="repo.archived" size="x-small">Public archive</VChip>
+              <VChip v-if="repo.archived" size="x-small" variant="tonal" color="warning">
+                Archived
+              </VChip>
             </div>
           </div>
         </div>
@@ -76,7 +83,10 @@ const emit = defineEmits<{
     padding: var(--space-3);
 
     &--active {
+      --v-activated-opacity: 0; /* Remove grey cast */
+
       border-left-color: rgba(var(--v-theme-primary));
+      background-color: rgba(var(--v-theme-primary), 0.1);
     }
   }
 

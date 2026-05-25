@@ -12,16 +12,16 @@ describe('<RepoList />', () => {
     })
 
     cy.findByText(mockRepositories[0].full_name).should('be.visible')
-    cy.findByText(mockRepositories[0].description).should('be.visible')
+    cy.findByText(mockRepositories[0].description!).should('be.visible')
     cy.findByText(formatCompactCount(mockRepositories[0].stargazers_count)).should('be.visible')
     cy.findByText(formatCompactCount(mockRepositories[0].watchers_count)).should('be.visible')
-    cy.findByText(mockRepositories[0].language).should('be.visible')
+    cy.findByText(mockRepositories[0].language!).should('be.visible')
 
     cy.findByText(mockRepositories[1].full_name).should('be.visible')
-    cy.findByText(mockRepositories[1].description).should('be.visible')
+    cy.findByText(mockRepositories[1].description!).should('be.visible')
     cy.findByText(formatCompactCount(mockRepositories[1].stargazers_count)).should('be.visible')
     cy.findByText(formatCompactCount(mockRepositories[1].watchers_count)).should('be.visible')
-    cy.findByText(mockRepositories[1].language).should('be.visible')
+    cy.findByText(mockRepositories[1].language!).should('be.visible')
   })
 
   it('shows the archive badge on an archived repo', () => {
@@ -29,7 +29,7 @@ describe('<RepoList />', () => {
       props: { items: [archivedRepo] },
     })
 
-    cy.findByText('Public archive').should('be.visible')
+    cy.findByText('Archived').should('be.visible')
   })
 
   it('renders up to 5 topic chips', () => {

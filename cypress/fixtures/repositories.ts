@@ -1,5 +1,5 @@
 import type { GitHubRepo } from '@/types/github';
-import type { SearchRepositoriesResponse } from '@/types/github'
+import type { GetRepositoryResponse, SearchRepositoriesResponse } from '@/types/github'
 
 export const mockRepositories: GitHubRepo[] = [
   {
@@ -15,6 +15,15 @@ export const mockRepositories: GitHubRepo[] = [
     license: { spdx_id: 'MIT', name: 'MIT License' },
     created_at: '2013-05-24T16:15:54Z',
     updated_at: '2026-02-17T16:15:54Z',
+    pushed_at: '2026-05-23T07:19:16Z',
+    forks_count: 51105,
+    homepage: 'https://react.dev',
+    clone_url: 'https://github.com/facebook/react.git',
+    ssh_url: 'git@github.com:facebook/react.git',
+    is_template: false,
+    has_pages: true,
+    has_discussions: false,
+    has_wiki: false,
     topics: ['html', 'css'],
     owner: {
       login: 'facebook',
@@ -35,6 +44,15 @@ export const mockRepositories: GitHubRepo[] = [
     license: { spdx_id: 'MIT', name: 'MIT License' },
     created_at: '2021-07-26T17:26:55Z',
     updated_at: '2024-08-02T16:15:54Z',
+    pushed_at: '2024-08-01T00:00:00Z',
+    forks_count: 5342,
+    homepage: 'https://vuejs.org',
+    clone_url: 'https://github.com/vuejs/core.git',
+    ssh_url: 'git@github.com:vuejs/core.git',
+    is_template: false,
+    has_pages: true,
+    has_discussions: false,
+    has_wiki: true,
     topics: [],
     owner: {
       login: 'vuejs',
@@ -57,6 +75,15 @@ export const archivedRepo: GitHubRepo = {
   license: { spdx_id: 'BSD-3-Clause', name: 'BSD 3-Clause "New" or "Revised" License' },
   created_at: '2014-05-01T00:00:00Z',
   updated_at: '2023-06-01T00:00:00Z',
+  pushed_at: '2023-05-01T00:00:00Z',
+  forks_count: 5000,
+  homepage: null,
+  clone_url: 'https://github.com/facebook/flux.git',
+  ssh_url: 'git@github.com:facebook/flux.git',
+  is_template: false,
+  has_pages: false,
+  has_discussions: false,
+  has_wiki: false,
   topics: ['flux', 'architecture'],
   owner: {
     login: 'facebook',
@@ -67,6 +94,7 @@ export const archivedRepo: GitHubRepo = {
 
 export const paginatedSearchResults: SearchRepositoriesResponse = {
   total_count: 25,
+  incomplete_results: false,
   items: [
     {
       id: 2001,
@@ -81,6 +109,15 @@ export const paginatedSearchResults: SearchRepositoriesResponse = {
       license: null,
       created_at: '2020-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z',
+      pushed_at: '2023-06-01T00:00:00Z',
+      forks_count: 50,
+      homepage: null,
+      clone_url: 'https://github.com/org/repo-page-2.git',
+      ssh_url: 'git@github.com:org/repo-page-2.git',
+      is_template: false,
+      has_pages: false,
+      has_discussions: false,
+      has_wiki: false,
       topics: [],
       owner: {
         login: 'org',
@@ -93,7 +130,12 @@ export const paginatedSearchResults: SearchRepositoriesResponse = {
 
 export const githubSearchResults: SearchRepositoriesResponse = {
   total_count: 2,
+  incomplete_results: false,
   items: [
     ...mockRepositories,
   ],
+}
+
+export const githubRepoResult: GetRepositoryResponse = {
+  ...mockRepositories[0],
 }

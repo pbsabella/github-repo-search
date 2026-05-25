@@ -3,15 +3,15 @@ const compactFormatter = new Intl.NumberFormat('en-US', {
   compactDisplay: 'short',
 })
 
-export function formatCompactCount(count: number): string {
+export const formatCompactCount = (count: number): string => {
   return compactFormatter.format(count)
 }
 
-export function formatDate(isoString: string): string {
+export const formatDate = (isoString: string): string => {
   return new Date(isoString).toLocaleDateString()
 }
 
-export function formatResetTime(unixSeconds: number): string {
+export const formatResetTime = (unixSeconds: number): string => {
   if (!unixSeconds) {
     return ''
   }

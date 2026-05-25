@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { GetRespositoryResponse, SearchRepositoriesResponse } from '@/types/github'
+import type { GetRepositoryResponse, LanguagesData, SearchRepositoriesResponse } from '@/types/github'
 import { useRateLimitStore } from '@/stores/rateLimit'
 
 export const PER_PAGE = 10
@@ -13,20 +13,27 @@ const api = axios.create({
   },
 })
 
-api.interceptors.response.use(
+const interceptorId = api.interceptors.response.use(
   (res) => {
-    useRateLimitStore().update(res.headers as Record<string, string>)
+    if (res.headers['x-ratelimit-resource']) {
+      useRateLimitStore().update(res.headers as Record<string, string>)
+    }
 
     return res
   },
   (err) => {
-    if (axios.isAxiosError(err) && err.response?.headers) {
+    if (axios.isAxiosError(err) && err.response?.headers?.['x-ratelimit-resource']) {
       useRateLimitStore().update(err.response.headers as Record<string, string>)
     }
 
     return Promise.reject(err)
   },
 )
+
+// Prevent duplicate interceptors when hot-reloading during development
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => api.interceptors.response.eject(interceptorId))
+}
 
 export const searchRepositories = async (query: string, page = 1): Promise<ApiResult<SearchRepositoriesResponse>> => {
   const res = await api.get<SearchRepositoriesResponse>('/search/repositories', {
@@ -43,8 +50,17 @@ export const searchRepositories = async (query: string, page = 1): Promise<ApiRe
   }
 }
 
-export const getRepository = async (owner: string, repo: string): Promise<ApiResult<GetRespositoryResponse>> => {
-  const res = await api.get<GetRespositoryResponse>(`/repos/${owner}/${repo}`)
+export const getRepository = async (owner: string, repo: string): Promise<ApiResult<GetRepositoryResponse>> => {
+  const res = await api.get<GetRepositoryResponse>(`/repos/${owner}/${repo}`)
+
+  return {
+    data: res.data,
+    headers: res.headers as Record<string, string>,
+  }
+}
+
+export const getLanguages = async (owner: string, repo: string): Promise<ApiResult<LanguagesData>> => {
+  const res = await api.get<LanguagesData>(`/repos/${owner}/${repo}/languages`)
 
   return {
     data: res.data,

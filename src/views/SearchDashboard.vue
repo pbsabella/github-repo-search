@@ -12,7 +12,7 @@ const { mdAndUp } = useDisplay()
 
 const store = useRepoSearchStore()
 const rateLimitStore = useRateLimitStore()
-const resetTime = computed(() => formatResetTime(rateLimitStore.resetAt))
+const resetTime = computed(() => formatResetTime(rateLimitStore.search.resetAt))
 const route = useRoute()
 const router = useRouter()
 
@@ -28,7 +28,7 @@ const showPageError = computed({
 })
 
 const pageErrorText = computed(() =>
-  rateLimitStore.isEmpty ? 'GitHub API rate limit reached.' : (store.pageError ?? ''),
+  rateLimitStore.search.isEmpty ? 'GitHub search rate limit reached.' : (store.pageError ?? ''),
 )
 
 const handlePageChange = (page: number) => {
@@ -112,7 +112,10 @@ watch(
         />
       </VCol>
       <VCol cols="4">
-        <p v-if="viewState !== 'initial'" class="search-dashboard__header-stats">
+        <p
+          v-if="viewState !== 'initial' && viewState !== 'loading'"
+          class="search-dashboard__header-stats"
+        >
           <span>{{ formatCompactCount(store.totalCount) }}</span> results
         </p>
       </VCol>
@@ -140,30 +143,35 @@ watch(
         <VEmptyState>
           <template #media>
             <VAvatar rounded="sm" size="48" variant="tonal" color="error">
-              <VIcon size="24">
+              <VIcon size="24" color="error">
                 {{
-                  rateLimitStore.isEmpty ? 'mdi-timer-alert-outline' : 'mdi-alert-circle-outline'
+                  rateLimitStore.search.isEmpty
+                    ? 'mdi-timer-alert-outline'
+                    : 'mdi-alert-circle-outline'
                 }}
               </VIcon>
             </VAvatar>
           </template>
           <template #title>
             <h2 class="search-dashboard__empty-title">
-              {{ rateLimitStore.isEmpty ? 'Rate limit reached' : 'Something went wrong' }}
+              {{ rateLimitStore.search.isEmpty ? 'Rate limit reached' : 'Something went wrong' }}
             </h2>
           </template>
           <template #text>
-            <template v-if="rateLimitStore.isEmpty">
+            <template v-if="rateLimitStore.search.isEmpty">
               <p>
                 You've hit GitHub's anonymous rate limit.
-                <span v-if="resetTime">Resets at {{ resetTime }}.</span>
+                <span v-if="resetTime">
+                  Resets at <span class="search-dashboard__empty-time">{{ resetTime }}</span
+                  >.
+                </span>
               </p>
             </template>
             <template v-else>
               <p>
                 The request failed before we got a response. Check your connection and try again.
               </p>
-              <p v-if="store.error">{{ store.error }}</p>
+              <p v-if="store.error" class="search-dashboard__empty-subtext">{{ store.error }}</p>
             </template>
           </template>
           <template #actions>
@@ -211,6 +219,7 @@ watch(
           <VCol cols="auto">
             <VContainer>
               <VPagination
+                class="search-dashboard__pagination"
                 density="compact"
                 size="sm"
                 :model-value="store.page"
@@ -279,6 +288,16 @@ watch(
     margin-top: var(--space-4);
   }
 
+  &__empty-time {
+    font-weight: var(--font-weight-bold);
+  }
+
+  &__empty-subtext {
+    font-size: var(--font-size-caption);
+    color: var(--color-text-secondary);
+    margin-top: var(--space-2);
+  }
+
   &__list--loading {
     opacity: 0.5;
     transition: opacity 0.2s ease;
@@ -288,6 +307,10 @@ watch(
     font-size: var(--font-size-caption);
     text-align: center;
     margin-bottom: 0;
+  }
+
+  &__pagination {
+    font-size: var(--font-size-body-sm);
   }
 }
 </style>
