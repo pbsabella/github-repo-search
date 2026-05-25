@@ -1,5 +1,5 @@
 import RepoList from './RepoList.vue'
-import { mockRepositories, archivedRepo } from '../../../cypress/fixtures/repositories'
+import { mockRepositories, archivedRepo } from '@/testing/fixtures/repositories'
 import { formatCompactCount } from '@/utils/format'
 
 describe('<RepoList />', () => {

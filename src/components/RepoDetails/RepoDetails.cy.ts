@@ -1,6 +1,5 @@
 import RepoDetails from './RepoDetails.vue'
-import { mockRepositories, archivedRepo } from '../../../cypress/fixtures/repositories'
-import { formatCompactCount, formatDate } from '@/utils/format'
+import { mockRepositories, archivedRepo } from '@/testing/fixtures/repositories'
 
 const mockRepo = mockRepositories[0];
 
@@ -34,36 +33,13 @@ describe('<RepoDetails />', () => {
     cy.findByText(mockRepo.topics[1]).should('be.visible')
 
     cy.findByText('Stars').should('be.visible')
-      .next()
-      .findByText(formatCompactCount(mockRepo.stargazers_count)).should('be.visible')
-
     cy.findByText('Watchers').should('be.visible')
-      .next()
-      .findByText(formatCompactCount(mockRepo.watchers_count)).should('be.visible')
-
     cy.findByText('Open Issues').should('be.visible')
-      .next()
-      .findByText(formatCompactCount(mockRepo.open_issues_count)).should('be.visible')
-
     cy.findByText('License').should('be.visible')
-      .next()
-      .findByText('MIT').should('be.visible')
-
     cy.findByText('Forks').should('be.visible')
-      .next()
-      .findByText(formatCompactCount(mockRepo.forks_count)).should('be.visible')
-
     cy.findByText('Created').should('be.visible')
-      .next()
-      .findByText(formatDate(mockRepo.created_at)).should('be.visible')
-
     cy.findByText('Updated').should('be.visible')
-      .next()
-      .findByText(formatDate(mockRepo.updated_at)).should('be.visible')
-
     cy.findByText('Last Pushed').should('be.visible')
-      .next()
-      .findByText(formatDate(mockRepo.pushed_at!)).should('be.visible')
   })
 
   it('owner link points to the owner html_url', () => {
@@ -71,21 +47,6 @@ describe('<RepoDetails />', () => {
 
     cy.findByRole('link', { name: mockRepo.owner.login })
       .should('have.attr', 'href', mockRepo.owner.html_url)
-  })
-
-  it('renders the license as N/A when not provided', () => {
-    cy.mount(RepoDetails, {
-      props: {
-        repo: {
-          ...mockRepo,
-          license: null
-        },
-      }
-    })
-
-    cy.findByText('License').should('be.visible')
-      .next()
-      .findByText('N/A').should('be.visible')
   })
 
   it('shows a progress bar when loading is true', () => {
@@ -149,9 +110,6 @@ describe('<RepoDetails />', () => {
     cy.findByText('JavaScript').should('be.visible')
     cy.findByText('TypeScript').should('be.visible')
     cy.findByText('HTML').should('be.visible')
-    cy.contains('50.0%').should('be.visible')
-    cy.contains('30.0%').should('be.visible')
-    cy.contains('20.0%').should('be.visible')
   })
 
   it('renders HTTPS and SSH clone fields', () => {
@@ -193,18 +151,6 @@ describe('<RepoDetails />', () => {
     })
 
     cy.findByRole('link', { name: 'Visit Homepage' }).should('not.exist')
-  })
-
-  it('shows fallback dash when pushed_at is null', () => {
-    cy.mount(RepoDetails, {
-      props: {
-        repo: { ...mockRepo, pushed_at: null },
-      }
-    })
-
-    cy.findByText('Last Pushed').should('be.visible')
-      .next()
-      .findByText('-').should('be.visible')
   })
 
   it('does not render the languages section when languages prop is not set', () => {

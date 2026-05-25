@@ -2,7 +2,7 @@
 
 import '@testing-library/cypress/add-commands'
 import type { GetRepositoryResponse, SearchRepositoriesResponse } from '@/types/github'
-import { githubRepoResult, githubSearchResults } from '../fixtures/repositories'
+import { githubRepoResult, githubSearchResults } from '@/testing/fixtures/repositories'
 
 export interface MockGitHubSearchOptions {
   statusCode?: number

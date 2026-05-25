@@ -1,4 +1,4 @@
-import { githubSearchResults, paginatedSearchResults } from '../fixtures/repositories'
+import { githubSearchResults, paginatedSearchResults } from '@/testing/fixtures/repositories'
 
 describe('SearchDashboard view', () => {
 

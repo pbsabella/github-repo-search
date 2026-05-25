@@ -1,104 +1,25 @@
 <script setup lang="ts">
-import { watch, computed, nextTick, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify'
 import RepoList from '@/components/RepoList/RepoList.vue'
 import RepoDetails from '@/components/RepoDetails/RepoDetails.vue'
 import { useRepoSearchStore } from '@/stores/repoSearch'
-import { useRateLimitStore } from '@/stores/rateLimit'
-import { formatCompactCount, formatResetTime } from '@/utils/format'
+import { formatCompactCount } from '@/utils/format'
+import { useSearchRouting } from '@/composables/useSearchRouting'
 
 const { mdAndUp } = useDisplay()
 
 const store = useRepoSearchStore()
-const rateLimitStore = useRateLimitStore()
-const resetTime = computed(() => formatResetTime(rateLimitStore.search.resetAt))
-const errorVariant = computed<'rate-limit' | 'network' | null>(() => {
-  if (!store.detailsError) {
-    return null
-  }
-
-  return rateLimitStore.core.isEmpty ? 'rate-limit' : 'network'
-})
-const route = useRoute()
-const router = useRouter()
-
-const listRef = ref<HTMLDivElement | null>(null)
-
-const showPageError = computed({
-  get: () => !!store.pageError,
-  set: (v) => {
-    if (!v) {
-      store.pageError = null
-    }
-  },
-})
-
-const pageErrorText = computed(() =>
-  rateLimitStore.search.isEmpty ? 'GitHub search rate limit reached.' : (store.pageError ?? ''),
-)
-
-const handlePageChange = (page: number) => {
-  router.push({ query: { ...route.query, page: String(page) } })
-}
-
-const handleSearch = () => {
-  const q = store.query?.trim()
-
-  if (q) {
-    store.search(q)
-    router.push({ query: { q, page: '1' } })
-  }
-}
-
-watch(
-  () => [route.query.q, route.query.page],
-  async ([q, pageStr]) => {
-    const query = (q as string)?.trim()
-    const page = parseInt(pageStr as string, 10) || 1
-
-    if (!query) {
-      return
-    }
-
-    if (query !== store.query) {
-      store.query = query
-      await store.search(query, page)
-    } else if (page !== store.page && store.hasSearched) {
-      await store.goToPage(page)
-    }
-  },
-  { immediate: true },
-)
-
-const viewState = computed(() => {
-  if (!store.hasSearched) {
-    return 'initial'
-  }
-
-  if (store.error && !store.results.length) {
-    return 'error'
-  }
-
-  if (store.loading && !store.results.length) {
-    return 'loading'
-  }
-
-  if (!store.results.length) {
-    return 'no-results'
-  }
-
-  return 'results'
-})
-
-watch(
-  () => store.loading,
-  (loading, wasLoading) => {
-    if (wasLoading && !loading && store.hasSearched && store.results.length) {
-      nextTick(() => listRef.value?.scrollIntoView({ block: 'start' }))
-    }
-  },
-)
+const {
+  listRef,
+  resetTime,
+  errorVariant,
+  viewState,
+  showPageError,
+  pageErrorText,
+  isSearchRateLimited,
+  handleSearch,
+  handlePageChange,
+} = useSearchRouting()
 </script>
 
 <template>
@@ -163,21 +84,17 @@ watch(
           <template #media>
             <VAvatar rounded="sm" size="48" variant="tonal" color="error">
               <VIcon size="24" color="error">
-                {{
-                  rateLimitStore.search.isEmpty
-                    ? 'mdi-timer-alert-outline'
-                    : 'mdi-alert-circle-outline'
-                }}
+                {{ isSearchRateLimited ? 'mdi-timer-alert-outline' : 'mdi-alert-circle-outline' }}
               </VIcon>
             </VAvatar>
           </template>
           <template #title>
             <h2 class="search-dashboard__empty-title">
-              {{ rateLimitStore.search.isEmpty ? 'Rate limit reached' : 'Something went wrong' }}
+              {{ isSearchRateLimited ? 'Rate limit reached' : 'Something went wrong' }}
             </h2>
           </template>
           <template #text>
-            <template v-if="rateLimitStore.search.isEmpty">
+            <template v-if="isSearchRateLimited">
               <p>
                 You've hit GitHub's anonymous rate limit.
                 <span v-if="resetTime">

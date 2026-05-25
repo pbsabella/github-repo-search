@@ -1,4 +1,4 @@
-import type { GitHubRepo } from '@/types/github';
+import type { GitHubRepo } from '@/types/github'
 import type { GetRepositoryResponse, SearchRepositoriesResponse } from '@/types/github'
 
 export const mockRepositories: GitHubRepo[] = [
@@ -137,5 +137,5 @@ export const githubSearchResults: SearchRepositoriesResponse = {
 }
 
 export const githubRepoResult: GetRepositoryResponse = {
-  ...mockRepositories[0],
+  ...mockRepositories[0]!,
 }
