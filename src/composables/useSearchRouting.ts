@@ -14,6 +14,8 @@ export const useSearchRouting = () => {
 
   const resetTime = computed(() => formatResetTime(rateLimitStore.search.resetAt))
 
+  const isSearchRateLimited = computed(() => rateLimitStore.search.isEmpty)
+
   const errorVariant = computed<'rate-limit' | 'network' | null>(() => {
     if (!store.detailsError) {
       return null
@@ -22,7 +24,9 @@ export const useSearchRouting = () => {
     return rateLimitStore.core.isEmpty ? 'rate-limit' : 'network'
   })
 
-  const viewState = computed(() => {
+  type ViewState = 'initial' | 'loading' | 'error' | 'no-results' | 'results'
+
+  const viewState = computed<ViewState>(() => {
     if (!store.hasSearched) {
       return 'initial'
     }
@@ -102,8 +106,6 @@ export const useSearchRouting = () => {
       }
     },
   )
-
-  const isSearchRateLimited = computed(() => rateLimitStore.search.isEmpty)
 
   return {
     listRef,

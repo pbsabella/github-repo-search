@@ -196,7 +196,7 @@ describe('useRepoSearchStore', () => {
     })
   })
 
-  describe('fetchRepoDetails()', () => {
+  describe('selectRepo() - detail fetching', () => {
     const enrichedRepo = {
       ...mockRepo,
       clone_url: 'https://github.com/facebook/react.git',
@@ -210,8 +210,7 @@ describe('useRepoSearchStore', () => {
       vi.spyOn(github, 'getLanguages').mockResolvedValue({ data: mockLanguages, headers: mockHeaders })
 
       const store = useRepoSearchStore()
-      store.selectedRepo = mockRepo
-      await store.fetchRepoDetails('facebook', 'react')
+      await store.selectRepo(mockRepo)
 
       expect(store.selectedRepo).toEqual(enrichedRepo)
       expect(store.repoLanguages).toEqual(mockLanguages)
@@ -224,8 +223,7 @@ describe('useRepoSearchStore', () => {
       vi.spyOn(github, 'getLanguages').mockResolvedValue({ data: mockLanguages, headers: mockHeaders })
 
       const store = useRepoSearchStore()
-      store.selectedRepo = mockRepo
-      const fetchPromise = store.fetchRepoDetails('facebook', 'react')
+      const fetchPromise = store.selectRepo(mockRepo)
 
       expect(store.detailsLoading).toBe(true)
       resolveRepo({ data: enrichedRepo, headers: mockHeaders })
@@ -234,10 +232,10 @@ describe('useRepoSearchStore', () => {
       expect(store.detailsLoading).toBe(false)
     })
 
-    it('does nothing when selectedRepo is null', async () => {
+    it('does nothing when repo is null', async () => {
       const spy = vi.spyOn(github, 'getRepository')
       const store = useRepoSearchStore()
-      await store.fetchRepoDetails('facebook', 'react')
+      await store.selectRepo(null)
 
       expect(spy).not.toHaveBeenCalled()
     })
@@ -251,8 +249,7 @@ describe('useRepoSearchStore', () => {
       vi.spyOn(github, 'getLanguages').mockResolvedValue({ data: mockLanguages, headers: mockHeaders })
 
       const store = useRepoSearchStore()
-      store.selectedRepo = mockRepo
-      const firstFetch = store.fetchRepoDetails('facebook', 'react')
+      const firstFetch = store.selectRepo(mockRepo)
 
       store.selectedRepo = otherRepo
 
@@ -267,8 +264,7 @@ describe('useRepoSearchStore', () => {
       vi.spyOn(github, 'getLanguages').mockResolvedValue({ data: mockLanguages, headers: mockHeaders })
 
       const store = useRepoSearchStore()
-      store.selectedRepo = mockRepo
-      await store.fetchRepoDetails('facebook', 'react')
+      await store.selectRepo(mockRepo)
 
       expect(store.selectedRepo).toEqual(mockRepo)
       expect(store.repoLanguages).toEqual(mockLanguages)
@@ -280,8 +276,7 @@ describe('useRepoSearchStore', () => {
       vi.spyOn(github, 'getLanguages').mockRejectedValue(new Error('API error'))
 
       const store = useRepoSearchStore()
-      store.selectedRepo = mockRepo
-      await store.fetchRepoDetails('facebook', 'react')
+      await store.selectRepo(mockRepo)
 
       expect(store.repoLanguages).toBeNull()
       expect(store.selectedRepo).toEqual(enrichedRepo)
@@ -292,8 +287,7 @@ describe('useRepoSearchStore', () => {
       vi.spyOn(github, 'getLanguages').mockResolvedValue({ data: mockLanguages, headers: mockHeaders })
 
       const store = useRepoSearchStore()
-      store.selectedRepo = mockRepo
-      await store.fetchRepoDetails('facebook', 'react')
+      await store.selectRepo(mockRepo)
 
       expect(store.detailsError).toBe(false)
     })
@@ -303,22 +297,20 @@ describe('useRepoSearchStore', () => {
       vi.spyOn(github, 'getLanguages').mockResolvedValue({ data: mockLanguages, headers: mockHeaders })
 
       const store = useRepoSearchStore()
-      store.selectedRepo = mockRepo
-      await store.fetchRepoDetails('facebook', 'react')
+      await store.selectRepo(mockRepo)
 
       expect(store.detailsError).toBe(true)
     })
 
-    it('serves from cache on second call to the same repo', async () => {
+    it('serves from cache on second selectRepo call to the same repo', async () => {
       const getRepoSpy = vi.spyOn(github, 'getRepository').mockResolvedValue({ data: enrichedRepo, headers: mockHeaders })
       vi.spyOn(github, 'getLanguages').mockResolvedValue({ data: mockLanguages, headers: mockHeaders })
 
       const store = useRepoSearchStore()
-      store.selectedRepo = mockRepo
-      await store.fetchRepoDetails('facebook', 'react')
+      await store.selectRepo(mockRepo)
 
       getRepoSpy.mockClear()
-      await store.fetchRepoDetails('facebook', 'react')
+      await store.selectRepo(mockRepo)
 
       expect(getRepoSpy).not.toHaveBeenCalled()
     })
@@ -328,19 +320,17 @@ describe('useRepoSearchStore', () => {
       vi.spyOn(github, 'getLanguages').mockRejectedValue(new Error('API error'))
 
       const store = useRepoSearchStore()
-      store.selectedRepo = mockRepo
-      await store.fetchRepoDetails('facebook', 'react')
+      await store.selectRepo(mockRepo)
 
       expect(store.detailsError).toBe(false)
     })
 
-    it('detailsError is cleared when selectRepo is called', async () => {
+    it('detailsError is cleared when selectRepo is called with null', async () => {
       vi.spyOn(github, 'getRepository').mockRejectedValue(new Error('err'))
       vi.spyOn(github, 'getLanguages').mockResolvedValue({ data: mockLanguages, headers: mockHeaders })
 
       const store = useRepoSearchStore()
-      store.selectedRepo = mockRepo
-      await store.fetchRepoDetails('facebook', 'react')
+      await store.selectRepo(mockRepo)
       expect(store.detailsError).toBe(true)
 
       store.selectRepo(null)
@@ -353,8 +343,7 @@ describe('useRepoSearchStore', () => {
       vi.spyOn(github, 'searchRepositories').mockResolvedValue(makeSearchResult())
 
       const store = useRepoSearchStore()
-      store.selectedRepo = mockRepo
-      await store.fetchRepoDetails('facebook', 'react')
+      await store.selectRepo(mockRepo)
       expect(store.detailsError).toBe(true)
 
       await store.search('vue')

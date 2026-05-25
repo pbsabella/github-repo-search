@@ -89,14 +89,14 @@ Parts of this project were developed with AI assistance:
 - **Testing environment**: Setup the testing environments (`vitest` and `cypress`) to work with the rest of the dependencies like `testing-library`, `vuetify`, `pinia` and more.
 - **Generate design tokens**: Generate sensible scales for typography, font-weights, colors and spacing for `base.css`
 - **Vuetify support**: Guided the selection of UI components and props based on functional feature descriptions, and general debugging.
-- **Generate mocks & tests**: Specifically `repositories.ts`, and generate unit tests `*.spec.ts`
-- **Complete component & E2E tests**: Fill in gaps, adjustments to existing tests after regular audits and refactors
-- **Pinia store refinements**: Fill in gaps and general review and refactors
+- **Generate mocks & tests**: Specifically `repositories.ts` and unit tests `*.spec.ts`
+- **Complete component & E2E tests**: Fill in gaps and adjustments to existing tests after regular audits and refactors
+- **Pinia store refinements**: Improvements, review and refactor
 - **Enrich the details section**:
   - Display feature badges
   - Display languages and programmatically calculate dot colors
   - Display and add clone repo text fields
-- **Architectural review & feedback**: State review cycle after major milestones
 - **`@mdi/font` to `@mdi/js` migration**: Audit and declare used icons to improve bundle size
+- **Architectural review & feedback**: Regular state review cycle after major milestones
 
 All AI-scaffolded code was thoroughly reviewed, tested, and manually validated before integration.

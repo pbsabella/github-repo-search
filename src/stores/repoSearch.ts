@@ -79,7 +79,6 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
 
       results.value = data.items
       totalCount.value = data.total_count
-      pageError.value = null
     } catch (e: unknown) {
       page.value = previousPage
       pageError.value = e instanceof Error ? e.message : 'Failed to load page'
@@ -145,13 +144,13 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
     fetchRepoDetails(selectedRepo.value.owner.login, name!)
   }
 
-  const selectRepo = (repo: GitHubRepo | null) => {
+  const selectRepo = (repo: GitHubRepo | null): Promise<void> | void => {
     selectedRepo.value = repo
     repoLanguages.value = null
     detailsError.value = false
 
     if (repo) {
-      void fetchRepoDetails(repo.owner.login, repo.full_name.split('/')[1]!)
+      return fetchRepoDetails(repo.owner.login, repo.full_name.split('/')[1]!)
     }
   }
 
@@ -170,7 +169,6 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
     selectedRepo,
     totalCount,
     totalPages,
-    fetchRepoDetails,
     goToPage,
     retryDetails,
     search,

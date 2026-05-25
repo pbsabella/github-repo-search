@@ -66,7 +66,7 @@ export const useRepoDetails = (
         name,
         pct: (((data[name] ?? 0) / total) * 100).toFixed(1),
       }))
-      .filter(({ pct }) => parseFloat(pct) > 0) // Remove 0 or insignificant figures
+      .filter(({ pct }) => parseFloat(pct) > 0)
   })
 
   const featureBadges = computed<Badge[]>(() => {
@@ -148,7 +148,7 @@ export const useRepoDetails = (
       {
         code: 'forks',
         label: 'Forks',
-        value: repo.value.forks_count != null ? formatCompactCount(repo.value.forks_count) : '-',
+        value: formatCompactCount(repo.value.forks_count),
         icon: 'mdi-source-fork',
       },
       {

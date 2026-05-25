@@ -227,7 +227,7 @@ const {
 
   &__repo-list {
     overflow-y: auto;
-    height: calc(100vh - 121px);
+    height: calc(100vh - 121px); /* Header + search bar row */
     border-right: 1px solid var(--color-border);
   }
 
