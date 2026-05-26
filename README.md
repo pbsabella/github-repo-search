@@ -46,6 +46,11 @@ Requests are unauthenticated by default (rate limits below). Add a `VITE_GITHUB_
 - Desktop (960px+): 2-panel fixed layout - list (left) + details (right)
 - Mobile: Repository details open in a bottom sheet (50vh min-height)
 
+### Known issues
+
+- **Rate Limit Race Conditions:** The core rate limit counter can occasionally display minor inaccuracies due to asynchronous parallel API responses resolving out of order.
+- **Mobile Layout Constraints:** A minor nested scrolling behavior (double scroll) occurs on mobile devices.
+
 ## Setup
 
 ```sh

@@ -41,6 +41,7 @@ export const useRateLimitStore = defineStore('rateLimit', () => {
     }
 
     const now = Math.floor(Date.now() / 1000)
+    // FIXME: This is still intermittently acting up
     // First update (resetAt === 0): treat as a new window so remaining is always accepted.
     // Subsequent updates: a new window is when the client clock has passed the stored reset point.
     // This correctly handles concurrent requests that carry slightly different reset timestamps —
