@@ -151,26 +151,52 @@ describe('SearchDashboard view', () => {
 
     it('displays the repo details side panel when a result card is clicked', () => {
       cy.mockGitHubRepo()
+      cy.mockGitHubLanguages()
       cy.findByRole('listitem', { name: 'View details for facebook/react' }).click()
       cy.wait('@getRepo')
+      cy.wait('@getLanguages')
 
       cy.findByRole('link', { name: 'Open on GitHub' }).should('be.visible')
     })
 
     it('displays the partial data and error message when the repo API returns a 500 and attempts retry on click', () => {
       cy.mockGitHubRepo({ statusCode: 500 })
+      cy.mockGitHubLanguages()
       cy.findByRole('listitem', { name: 'View details for facebook/react' }).click()
 
       cy.findByRole('link', { name: 'Open on GitHub' }).should('be.visible')
-
-      cy.findByRole('alert').contains('Failed to load details.')
+      cy.findByRole('alert').contains('Details may be incomplete.')
+      cy.findByText('Language data unavailable.').should('not.exist')
 
       // Retry
       cy.mockGitHubRepo()
+      cy.mockGitHubLanguages()
       cy.findByRole('button', { name: 'Retry' }).click()
       cy.wait('@getRepo')
 
       cy.findByRole('alert').should('not.exist')
+    })
+
+    it('shows language error alert when languages request fails and repo succeeds', () => {
+      cy.mockGitHubRepo()
+      cy.mockGitHubLanguages({ statusCode: 500 })
+      cy.findByRole('listitem', { name: 'View details for facebook/react' }).click()
+      cy.wait('@getRepo')
+      cy.wait('@getLanguages')
+
+      cy.findByRole('link', { name: 'Open on GitHub' }).should('be.visible')
+      cy.findByText('Language data unavailable.').should('be.visible')
+      cy.findByText('Details may be incomplete.').should('not.exist')
+
+      // Retry
+      cy.mockGitHubRepo()
+      cy.mockGitHubLanguages()
+      cy.findByRole('button', { name: 'Retry' }).click()
+      cy.wait('@getRepo')
+      cy.wait('@getLanguages')
+
+      cy.findByText('Language data unavailable.').should('not.exist')
+      cy.findAllByText('JavaScript').should('have.length', 2)
     })
 
   })

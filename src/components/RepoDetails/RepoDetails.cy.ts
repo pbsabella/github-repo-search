@@ -63,7 +63,7 @@ describe('<RepoDetails />', () => {
       attrs: { onRetry },
     })
 
-    cy.findByText('Failed to load details.').should('be.visible')
+    cy.findByText('Something went wrong. Details may be incomplete.').should('be.visible')
     cy.findByRole('button', { name: 'Retry' }).should('be.visible').click()
     cy.get('@retry').should('have.been.calledOnce')
   })
@@ -71,7 +71,58 @@ describe('<RepoDetails />', () => {
   it('shows a rate-limit warning when errorVariant is "rate-limit"', () => {
     cy.mount(RepoDetails, { props: { repo: mockRepo, errorVariant: 'rate-limit' } })
 
-    cy.findByText('Core rate limit reached.').should('be.visible')
+    cy.findByText('Core rate limit reached. Details may be incomplete.').should('be.visible')
+  })
+
+  it('shows the reset time in the rate-limit alert when resetTime is provided', () => {
+    cy.mount(RepoDetails, {
+      props: { repo: mockRepo, errorVariant: 'rate-limit', resetTime: '5:30 PM' },
+    })
+
+    cy.findByRole('alert').contains(/5:30 PM/)
+  })
+
+  it('does not show a reset time when resetTime is absent', () => {
+    cy.mount(RepoDetails, {
+      props: { repo: mockRepo, errorVariant: 'rate-limit' },
+    })
+
+    cy.findByText(/Resets at/).should('not.exist')
+  })
+
+  it('shows language error alert with retry button when langError is true', () => {
+    const onRetry = cy.spy().as('retry')
+
+    cy.mount(RepoDetails, {
+      props: { repo: mockRepo, langError: true },
+      attrs: { onRetry },
+    })
+
+    cy.findByText('Language data unavailable.').should('be.visible')
+    cy.findAllByRole('button', { name: 'Retry' }).last().click()
+    cy.get('@retry').should('have.been.calledOnce')
+  })
+
+  it('does not show language error alert when rate-limit alert is shown', () => {
+    cy.mount(RepoDetails, {
+      props: { repo: mockRepo, errorVariant: 'rate-limit', langError: true },
+    })
+
+    cy.findByText('Language data unavailable.').should('not.exist')
+    cy.findByText('Core rate limit reached. Details may be incomplete.').should('be.visible')
+  })
+
+  it('does not show language error alert when languages are loaded', () => {
+    cy.mount(RepoDetails, {
+      props: {
+        repo: mockRepo,
+        languages: { JavaScript: 5000 },
+        langError: true,
+      },
+    })
+
+    cy.findByText('Language data unavailable.').should('not.exist')
+    cy.findByText('JavaScript').should('be.visible')
   })
 
   it('renders feature badges when repo has them', () => {

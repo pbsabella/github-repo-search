@@ -21,7 +21,7 @@ Requests are unauthenticated by default (rate limits below). Add a `VITE_GITHUB_
   - GET `/repos/${owner}/${repo}` for repository metadata
   - GET `/repos/${owner}/${repo}/languages` for language breakdown
 - Progressive display: Pre-fills data from the search response, then updates as details arrive
-- Caching: Results are cached in memory; repeated clicks on the same repo don't trigger new requests
+- Caching: Results are cached in memory when both requests succeed. If either fails, nothing is cached so a retry always hits the network
 
 ### Rate limit indicators
 
@@ -37,7 +37,9 @@ Requests are unauthenticated by default (rate limits below). Add a `VITE_GITHUB_
 |----------|----------|
 | Initial search fails | Error state with Retry button replaces the repository list |
 | Pagination request fails | Snackbar/toast displayed at the top; current page preserved |
-| Repository details fails | Alert displayed above the details section. Search-result data remains visible since basic repo info (name, owner, stars) was already populated from the search response. |
+| Repository details: rate limit hit | Warning alert with the reset time shown; base search data stays visible |
+| Repository details: network error | Inline notice with a Retry button; base search data stays visible |
+| Language data request fails | Inline notice in the languages section with a Retry button; rest of the details unaffected |
 
 ### Responsive layout
 

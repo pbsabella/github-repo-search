@@ -75,3 +75,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Override Vuetify default 0.6 opacity for floating labels to improve contrast */
+.v-label.v-field-label--floating {
+  opacity: 0.87;
+}

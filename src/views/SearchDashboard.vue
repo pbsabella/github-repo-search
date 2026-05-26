@@ -12,6 +12,7 @@ const store = useRepoSearchStore()
 const {
   listRef,
   resetTime,
+  coreResetTime,
   errorVariant,
   viewState,
   showPageError,
@@ -99,7 +100,7 @@ const {
                 <p>
                   You've hit GitHub's anonymous rate limit.
                   <span v-if="resetTime">
-                    Resets at <span class="search-dashboard__empty-time">{{ resetTime }}</span
+                    Resets at <strong>{{ resetTime }}</strong
                     >.
                   </span>
                 </p>
@@ -176,6 +177,8 @@ const {
           :repo="store.selectedRepo"
           :loading="store.detailsLoading"
           :error-variant="errorVariant"
+          :lang-error="store.langError"
+          :reset-time="coreResetTime"
           :languages="store.repoLanguages"
           @retry="store.retryDetails()"
         />
@@ -252,10 +255,6 @@ const {
   &__empty-title {
     font-size: var(--font-size-h6);
     margin-top: var(--space-4);
-  }
-
-  &__empty-time {
-    font-weight: var(--font-weight-bold);
   }
 
   &__empty-subtext {
