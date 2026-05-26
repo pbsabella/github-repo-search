@@ -1,39 +1,29 @@
 /// <reference types="cypress" />
-// ***********************************************
-// This example commands.ts shows you how to
-// create various custom commands and overwrite
-// existing commands.
-//
-// For more comprehensive examples of custom
-// commands please read more here:
-// https://on.cypress.io/custom-commands
-// ***********************************************
-//
-//
-// -- This is a parent command --
-// Cypress.Commands.add('login', (email, password) => { ... })
-//
-//
-// -- This is a child command --
-// Cypress.Commands.add('drag', { prevSubject: 'element'}, (subject, options) => { ... })
-//
-//
-// -- This is a dual command --
-// Cypress.Commands.add('dismiss', { prevSubject: 'optional'}, (subject, options) => { ... })
-//
-//
-// -- This will overwrite an existing command --
-// Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
-//
-// declare global {
-//   namespace Cypress {
-//     interface Chainable {
-//       login(email: string, password: string): Chainable<void>
-//       drag(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
-//       dismiss(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
-//       visit(originalFn: CommandOriginalFn, url: string, options: Partial<VisitOptions>): Chainable<Element>
-//     }
-//   }
-// }
 
-export {}
+import '@testing-library/cypress/add-commands'
+import type { GetRepositoryResponse, SearchRepositoriesResponse } from '@/types/github'
+import { githubRepoResult, githubSearchResults } from '@/testing/fixtures/repositories'
+
+export interface MockGitHubSearchOptions {
+  statusCode?: number
+  body?: Partial<SearchRepositoriesResponse>
+}
+
+export interface MockGitHubRepoOptions {
+  statusCode?: number
+  body?: Partial<GetRepositoryResponse>
+}
+
+Cypress.Commands.add('mockGitHubSearch', (options: MockGitHubSearchOptions = {}) => {
+  cy.intercept('GET', '**/search/repositories**', {
+    statusCode: options.statusCode ?? 200,
+    body: options.body ?? githubSearchResults,
+  }).as('searchRepos')
+})
+
+Cypress.Commands.add('mockGitHubRepo', (options: MockGitHubRepoOptions = {}) => {
+  cy.intercept('GET', '**/repos/*/*', {
+    statusCode: options.statusCode ?? 200,
+    body: options.body ?? githubRepoResult,
+  }).as('getRepo')
+})

@@ -6,9 +6,19 @@ export default mergeConfig(
   viteConfig,
   defineConfig({
     test: {
+      globals: true,
       environment: 'jsdom',
-      exclude: [...configDefaults.exclude, 'e2e/**'],
+      exclude: [
+        ...configDefaults.exclude,
+        'e2e/**',
+        '**/*.cy.*'
+      ],
       root: fileURLToPath(new URL('./', import.meta.url)),
+      server: {
+        deps: {
+          inline: ['vuetify']
+        }
+      },
     },
   }),
 )

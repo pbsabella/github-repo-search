@@ -13,8 +13,13 @@
 // https://on.cypress.io/configuration
 // ***********************************************************
 
-// Import commands.js using ES2015 syntax:
 import './commands'
 
-// Alternatively you can use CommonJS syntax:
-// require('./commands')
+beforeEach(() => {
+  cy.intercept('GET', 'https://api.github.com/**', (req) => {
+    const message = `[cy.intercept] Unmocked GitHub API request: ${req.method} ${req.url} - add cy.mockGitHubSearch() to this test`
+    Cypress.log({ name: 'WARNING', message, consoleProps: () => ({ url: req.url, method: req.method }) })
+    console.warn(message)
+    req.reply({ statusCode: 500, body: { message: 'Unmocked GitHub API call - add cy.mockGitHubSearch() to this test' } })
+  }).as('unmockedGitHubRequest')
+})

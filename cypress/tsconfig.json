@@ -1,8 +1,24 @@
 {
   "extends": "@vue/tsconfig/tsconfig.dom.json",
-  "include": ["./e2e/**/*", "./component/**/*", "./support/**/*"],
+  "include": [
+    "./e2e/**/*",
+    "./component/**/*",
+    "./support/**/*",
+    "../src/**/*.cy.ts"
+  ],
   "compilerOptions": {
+    "strict": true,
     "isolatedModules": false,
-    "types": ["cypress"]
+    "types": [
+      "cypress",
+      "@testing-library/cypress",
+      "vite/client"
+    ],
+    "tsBuildInfoFile": "../node_modules/.tmp/tsconfig.cypress.tsbuildinfo",
+    "paths": {
+      "@/*": [
+        "../src/*"
+      ]
+    }
   }
 }

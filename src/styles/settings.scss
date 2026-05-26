@@ -1,0 +1,6 @@
+@use 'vuetify/settings' with (
+  $chip-font-weight: 500,
+  $skeleton-loader-button-width: 80px,
+  $skeleton-loader-avatar-height: 24px,
+  $skeleton-loader-avatar-width: 24px
+);
