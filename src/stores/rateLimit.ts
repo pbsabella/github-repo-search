@@ -35,7 +35,19 @@ export const useRateLimitStore = defineStore('rateLimit', () => {
     const t = headers['x-ratelimit-reset']
 
     const newReset = t ? parseInt(t, 10) : 0
-    const isNewWindow = newReset !== 0 && newReset !== target.resetAt
+
+    if (target.resetAt > 0 && newReset > 0 && newReset < target.resetAt) {
+      return
+    }
+
+    const now = Math.floor(Date.now() / 1000)
+    // First update (resetAt === 0): treat as a new window so remaining is always accepted.
+    // Subsequent updates: a new window is when the client clock has passed the stored reset point.
+    // This correctly handles concurrent requests that carry slightly different reset timestamps —
+    // both responses arrive well before resetAt expires, so neither falsely triggers a new window.
+    const isNewWindow = target.resetAt === 0
+      ? newReset !== 0
+      : now >= target.resetAt
 
     if (l) {
       target.limit = parseInt(l, 10)
@@ -43,17 +55,17 @@ export const useRateLimitStore = defineStore('rateLimit', () => {
 
     if (r) {
       const newRemaining = parseInt(r, 10)
+      // A response whose own reset time is already in the past is from an expired window.
+      // Skip writing remaining so it doesn't overwrite state from the current window.
+      const isExpiredWindowResponse = isNewWindow && target.resetAt > 0 && newReset > 0 && newReset < now
 
-      // Handle two core API calls (getRepository and getLanguages) where response can be out of order
-      // Same window: higher remaining values never overwrite lower ones
-      // New window (reset changed): remaining correctly resets to higher values
-      if (!target.hasData || isNewWindow || newRemaining < target.remaining) {
+      if (!isExpiredWindowResponse && (!target.hasData || isNewWindow || newRemaining < target.remaining)) {
         target.remaining = newRemaining
       }
     }
 
-    if (t) {
-      target.resetAt = parseInt(t, 10)
+    if (t && newReset > target.resetAt) {
+      target.resetAt = newReset
     }
   }
 

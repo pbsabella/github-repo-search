@@ -135,13 +135,14 @@ describe('useRateLimitStore', () => {
   describe('concurrent updates (race condition prevention)', () => {
     it('allows remaining to increase when reset window changes', () => {
       const store = useRateLimitStore()
+      const now = Math.floor(Date.now() / 1000)
       const headersOldWindow = {
         ...headers('core', 1, 60),
-        'x-ratelimit-reset': '1700000000',
+        'x-ratelimit-reset': String(now - 1),   // already expired
       }
       const headersNewWindow = {
         ...headers('core', 60, 60),
-        'x-ratelimit-reset': '1700003600',
+        'x-ratelimit-reset': String(now + 3600), // new future window
       }
 
       store.update(headersOldWindow)
@@ -153,13 +154,14 @@ describe('useRateLimitStore', () => {
 
     it('handles out-of-order concurrent responses correctly (race condition prevention)', () => {
       const store = useRateLimitStore()
+      const futureReset = String(Math.floor(Date.now() / 1000) + 3600)
       const reqSentFirst = {
         ...headers('core', 58, 60),
-        'x-ratelimit-reset': '1700000000',
+        'x-ratelimit-reset': futureReset,
       }
       const reqSentSecond = {
         ...headers('core', 57, 60),
-        'x-ratelimit-reset': '1700000000',
+        'x-ratelimit-reset': futureReset,
       }
 
       store.update(reqSentSecond)
@@ -167,6 +169,72 @@ describe('useRateLimitStore', () => {
 
       store.update(reqSentFirst)
       expect(store.core.remaining).toBe(57)
+    })
+
+    it('handles concurrent responses with slightly different reset times', () => {
+      const store = useRateLimitStore()
+      const now = Math.floor(Date.now() / 1000)
+      const req1 = {
+        ...headers('core', 4994, 5000),
+        'x-ratelimit-reset': String(now + 3600),
+      }
+      const req2 = {
+        ...headers('core', 4997, 5000),
+        'x-ratelimit-reset': String(now + 3825), // 225s later — same window, different server clock
+      }
+
+      store.update(req1)
+      expect(store.core.remaining).toBe(4994)
+
+      // Higher remaining from a slightly different reset time must not overwrite the lower value
+      store.update(req2)
+      expect(store.core.remaining).toBe(4994)
+    })
+
+    it('a delayed old-window response does not overwrite data already set by the new window', () => {
+      const store = useRateLimitStore()
+      const now = Math.floor(Date.now() / 1000)
+      const newWindowHeaders = { ...headers('core', 59, 60), 'x-ratelimit-reset': String(now + 3590) }
+      const oldWindowHeaders = { ...headers('core', 2, 60), 'x-ratelimit-reset': String(now - 10) }
+
+      store.update(newWindowHeaders)
+      expect(store.core.remaining).toBe(59)
+      expect(store.core.resetAt).toBe(now + 3590)
+
+      store.update(oldWindowHeaders)
+      expect(store.core.remaining).toBe(59)       // must not drop back to 2
+      expect(store.core.resetAt).toBe(now + 3590) // must not be pushed back into the past
+    })
+
+    it('a response from before an idle period does not corrupt the store after the window resets', () => {
+      const store = useRateLimitStore()
+      const now = Math.floor(Date.now() / 1000)
+      // State just before the user went idle: 5 remaining, window already expired
+      store.update({ ...headers('core', 5, 60), 'x-ratelimit-reset': String(now - 1) })
+
+      // A request sent before the idle period finally arrives — its reset time is in the past
+      store.update({ ...headers('core', 4, 60), 'x-ratelimit-reset': String(now - 1) })
+      expect(store.core.remaining).toBe(5) // stale value must not overwrite
+
+      // Coming back from idle and searching works fine — the new window has a future reset time
+      store.update({ ...headers('core', 10, 60), 'x-ratelimit-reset': String(now + 3599) })
+      expect(store.core.remaining).toBe(10) // fresh new-window data is accepted normally
+    })
+
+    it('the reset time only ever moves forward, never backward', () => {
+      const store = useRateLimitStore()
+      const now = Math.floor(Date.now() / 1000)
+
+      store.update({ ...headers('core', 50, 60), 'x-ratelimit-reset': String(now + 3600) })
+      expect(store.core.resetAt).toBe(now + 3600)
+
+      store.update({ ...headers('core', 49, 60), 'x-ratelimit-reset': String(now + 3825) })
+      expect(store.core.resetAt).toBe(now + 3825)
+
+      // A response with an older reset time is dropped — the clock does not rewind
+      store.update({ ...headers('core', 48, 60), 'x-ratelimit-reset': String(now + 3600) })
+      expect(store.core.resetAt).toBe(now + 3825)
+      expect(store.core.remaining).toBe(49) // the dropped update must not touch remaining either
     })
   })
 })

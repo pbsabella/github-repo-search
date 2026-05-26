@@ -92,6 +92,7 @@ Parts of this project were developed with AI assistance:
 - **Generate mocks & tests**: Specifically `repositories.ts` and unit tests `*.spec.ts`
 - **Complete component & E2E tests**: Fill in gaps and adjustments to existing tests after regular audits and refactors
 - **Pinia store refinements**: Improvements, review and refactor
+- **Rate limit refinements**: Improve guard rails around updates and race conditions
 - **Enrich the details section**:
   - Display feature badges
   - Display languages and programmatically calculate dot colors
