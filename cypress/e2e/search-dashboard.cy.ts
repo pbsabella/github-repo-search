@@ -25,7 +25,7 @@ describe('SearchDashboard view', () => {
       cy.wait('@searchRepos')
 
       cy.findByRole('list', { name: 'Search results' }).should('be.visible')
-      cy.findByText('facebook/react').should('be.visible')
+      cy.findByRole('listitem', { name: 'View details for facebook/react' }).should('be.visible')
 
       // Details - nothing is preselected
       cy.findByRole('heading', { level: 2, name: 'Nothing to show' }).should('be.visible')
@@ -52,13 +52,19 @@ describe('SearchDashboard view', () => {
     })
 
     it('shows pagination controls and loads page 2', () => {
-      cy.intercept('GET', '**/search/repositories**', { body: { ...githubSearchResults, total_count: 25 } }).as('searchPage1')
+      cy.intercept('GET', '**/search/repositories**', {
+        body: {
+          ...githubSearchResults,
+          total_count: 25,
+        }
+      }).as('searchPage1')
       cy.visit('/')
 
       cy.findByRole('searchbox', { name: 'Search GitHub' }).type('react{enter}')
       cy.wait('@searchPage1')
 
-      cy.intercept('GET', '**/search/repositories**', { body: paginatedSearchResults }).as('searchPage2')
+      cy.intercept('GET', '**/search/repositories**', { body: paginatedSearchResults })
+        .as('searchPage2')
 
       cy.findByRole('button', { name: 'Go to page 2' }).click()
       cy.wait('@searchPage2')
@@ -106,10 +112,18 @@ describe('SearchDashboard view', () => {
       cy.wait('@searchRepos')
 
       cy.findByRole('heading', { name: 'Rate limit reached', level: 2 }).should('be.visible')
+
+      // Header chip
+      cy.findByLabelText('Search rate limit').contains('Search: 0 / 10')
     })
 
     it('shows the page error snackbar when a pagination request fails', () => {
-      cy.intercept('GET', '**/search/repositories**', { body: { ...githubSearchResults, total_count: 25 } }).as('searchPage1')
+      cy.intercept('GET', '**/search/repositories**', {
+        body: {
+          ...githubSearchResults,
+          total_count: 25,
+        }
+      }).as('searchPage1')
       cy.visit('/')
 
       cy.findByRole('searchbox', { name: 'Search GitHub' }).type('react{enter}')

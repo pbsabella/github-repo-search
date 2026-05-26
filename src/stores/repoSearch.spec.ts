@@ -41,7 +41,12 @@ const mockRepo = {
 }
 
 const makeSearchResult = (overrides: Partial<SearchRepositoriesResponse> = {}) => ({
-  data: { total_count: 1, incomplete_results: false, items: [mockRepo], ...overrides },
+  data: {
+    total_count: 1,
+    incomplete_results: false,
+    items: [mockRepo],
+    ...overrides,
+  },
   headers: mockHeaders,
 })
 
@@ -169,15 +174,14 @@ describe('useRepoSearchStore', () => {
   })
 
   describe('totalPages', () => {
-    it('computes total pages from totalCount and PER_PAGE', async () => {
+    it('caps totalPages at GITHUB_MAX_RESULTS / PER_PAGE', async () => {
       vi.spyOn(github, 'searchRepositories').mockResolvedValue(
-        makeSearchResult({ total_count: 25, items: [mockRepo] }),
+        makeSearchResult({ total_count: 9999 }),
       )
-
       const store = useRepoSearchStore()
       await store.search('react')
 
-      expect(store.totalPages).toBe(Math.ceil(25 / github.PER_PAGE))
+      expect(store.totalPages).toBe(Math.ceil(1000 / github.PER_PAGE)) // 100 pages, not 1000
     })
   })
 

@@ -19,13 +19,4 @@ export default defineConfig({
     },
     dedupe: ['vue'],
   },
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    server: {
-      deps: {
-        inline: ['vuetify'],
-      },
-    },
-  },
 })

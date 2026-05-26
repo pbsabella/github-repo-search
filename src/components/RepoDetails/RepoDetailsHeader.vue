@@ -23,8 +23,6 @@ defineProps<{
           {{ repo.owner.login }}
         </a>
         <div class="repo-details-header__name">
-          <span>{{ repo.owner.login }}</span>
-          <span>/</span>
           <span class="repo-details-header__name-emphasis">{{ shortName }}</span>
         </div>
       </div>
@@ -77,20 +75,23 @@ defineProps<{
   }
 
   &__actions {
-    flex: 0 0 auto;
+    flex-basis: 100%;
     display: flex;
     gap: var(--space-2);
     align-items: center;
+    flex-wrap: wrap;
+  }
+
+  @media (min-width: 600px) {
+    &__actions {
+      flex-basis: auto;
+    }
   }
 
   &__name {
-    color: var(--color-text-secondary);
+    color: var(--color-text);
     word-break: break-all;
     font-size: var(--font-size-h5);
-  }
-
-  &__name-emphasis {
-    color: var(--color-text);
     font-weight: var(--font-weight-bold);
   }
 
@@ -103,12 +104,6 @@ defineProps<{
       color: rgba(var(--v-theme-primary));
       text-decoration: underline;
       transition: color 0.2s ease-out;
-    }
-  }
-
-  @media (max-width: 599px) {
-    .repo-details-header__actions {
-      flex-basis: 100%;
     }
   }
 }

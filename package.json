@@ -12,7 +12,7 @@
     "test:unit": "vitest run",
     "test:component": "cypress run --component --browser chrome",
     "test:e2e": "start-server-and-test 'vite dev --port 4173' http://localhost:4173 'cypress run --e2e --browser chrome'",
-    "cy:open": "start-server-and-test 'vite dev --port 4173' http://localhost:4173 'cypress open --browser chrome'",
+    "cy:open": "start-server-and-test 'vite dev --port 4173' http://localhost:4173 'cypress open'",
     "cy:prepare": "cypress install",
     "type-check": "vue-tsc --build",
     "lint": "run-p type-check && run-s lint:*",

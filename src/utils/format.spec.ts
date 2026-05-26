@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatCompactCount, formatDate, formatResetTime } from './format'
+import { formatCompactCount, formatDate, formatResetTime, repoName } from './format'
 
 describe('formatCompactCount', () => {
   it('formats zero', () => {
@@ -57,5 +57,15 @@ describe('formatResetTime', () => {
   it('converts unix seconds to a locale time string', () => {
     const unix = 1700000000
     expect(formatResetTime(unix)).toBe(new Date(unix * 1000).toLocaleTimeString())
+  })
+})
+
+describe('repoName', () => {
+  it('extracts the repo segment from a full_name', () => {
+    expect(repoName('facebook/react')).toBe('react')
+  })
+
+  it('returns the full string when there is no slash', () => {
+    expect(repoName('react')).toBe('react')
   })
 })

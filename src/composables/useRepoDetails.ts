@@ -2,6 +2,7 @@ import { computed } from 'vue'
 import type { Ref } from 'vue'
 import type { GitHubRepo, LanguagesData } from '@/types/github'
 import { formatCompactCount, formatDate } from '@/utils/format'
+import { repoName } from '@/utils/format'
 
 export type RepoDetail = {
   code: string
@@ -26,7 +27,7 @@ export const useRepoDetails = (
   repo: Ref<GitHubRepo | null | undefined>,
   languages: Ref<LanguagesData | null | undefined>,
 ) => {
-  const repoShortName = computed(() => repo.value?.full_name.split('/')[1])
+  const repoShortName = computed(() => repo.value ? repoName(repo.value.full_name) : undefined)
 
   const cloneFields = computed<CloneField[]>(() => {
     if (!repo.value) {

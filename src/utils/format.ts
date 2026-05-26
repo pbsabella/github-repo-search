@@ -18,3 +18,6 @@ export const formatResetTime = (unixSeconds: number): string => {
 
   return new Date(unixSeconds * 1000).toLocaleTimeString()
 }
+
+export const repoName = (fullName: string): string =>
+  fullName.split('/')[1] ?? fullName

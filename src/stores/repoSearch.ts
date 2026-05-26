@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { searchRepositories, getRepository, getLanguages, PER_PAGE } from '@/services/github'
+import { repoName } from '@/utils/format'
 import type { GitHubRepo, LanguagesData } from '@/types/github'
 
 type DetailsCacheEntry = {
@@ -111,6 +112,7 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
         getLanguages(owner, repo),
       ])
 
+      // Check if request is stale first
       if (selectedRepo.value?.full_name !== `${owner}/${repo}`) {
         return
       }
@@ -139,9 +141,7 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
       return
     }
 
-    const [, name] = selectedRepo.value.full_name.split('/')
-
-    fetchRepoDetails(selectedRepo.value.owner.login, name!)
+    fetchRepoDetails(selectedRepo.value.owner.login, repoName(selectedRepo.value.full_name))
   }
 
   const selectRepo = (repo: GitHubRepo | null): Promise<void> | void => {
@@ -150,7 +150,7 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
     detailsError.value = false
 
     if (repo) {
-      return fetchRepoDetails(repo.owner.login, repo.full_name.split('/')[1]!)
+      return fetchRepoDetails(repo.owner.login, repoName(repo.full_name))
     }
   }
 
