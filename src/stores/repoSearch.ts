@@ -6,7 +6,7 @@ import type { GitHubRepo, LanguagesData } from '@/types/github'
 
 type DetailsCacheEntry = {
   repo: GitHubRepo
-  languages: LanguagesData | null
+  languages: LanguagesData
 }
 
 // The GitHub REST API provides up to 1,000 results for each search
@@ -22,6 +22,7 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
   const repoLanguages = ref<LanguagesData | null>(null)
   const detailsLoading = ref(false)
   const detailsError = ref(false)
+  const langError = ref(false)
   const loading = ref(false)
   const error = ref<string | null>(null)
   const pageError = ref<string | null>(null)
@@ -105,6 +106,7 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
 
     detailsLoading.value = true
     detailsError.value = false
+    langError.value = false
 
     try {
       const [repoResult, langResult] = await Promise.allSettled([
@@ -120,16 +122,18 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
       if (repoResult.status === 'fulfilled') {
         selectedRepo.value = repoResult.value.data
 
-        detailsCache.set(cacheKey, {
-          repo: repoResult.value.data,
-          languages: langResult.status === 'fulfilled' ? langResult.value.data : null,
-        })
+        if (langResult.status === 'fulfilled') {
+          repoLanguages.value = langResult.value.data
+
+          detailsCache.set(cacheKey, {
+            repo: repoResult.value.data,
+            languages: langResult.value.data,
+          })
+        } else {
+          langError.value = true
+        }
       } else {
         detailsError.value = true
-      }
-
-      if (langResult.status === 'fulfilled') {
-        repoLanguages.value = langResult.value.data
       }
     } finally {
       detailsLoading.value = false
@@ -148,6 +152,7 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
     selectedRepo.value = repo
     repoLanguages.value = null
     detailsError.value = false
+    langError.value = false
 
     if (repo) {
       return fetchRepoDetails(repo.owner.login, repoName(repo.full_name))
@@ -157,6 +162,7 @@ export const useRepoSearchStore = defineStore('repoSearch', () => {
   return {
     detailsError,
     detailsLoading,
+    langError,
     error,
     hasSearched,
     loading,

@@ -271,7 +271,7 @@ describe('useRepoSearchStore', () => {
       await store.selectRepo(mockRepo)
 
       expect(store.selectedRepo).toEqual(mockRepo)
-      expect(store.repoLanguages).toEqual(mockLanguages)
+      expect(store.repoLanguages).toBeNull()
       expect(store.detailsLoading).toBe(false)
     })
 
@@ -352,6 +352,87 @@ describe('useRepoSearchStore', () => {
 
       await store.search('vue')
       expect(store.detailsError).toBe(false)
+    })
+
+    it('sets langError when getLanguages fails and getRepository succeeds', async () => {
+      vi.spyOn(github, 'getRepository').mockResolvedValue({ data: enrichedRepo, headers: mockHeaders })
+      vi.spyOn(github, 'getLanguages').mockRejectedValue(new Error('API error'))
+
+      const store = useRepoSearchStore()
+      await store.selectRepo(mockRepo)
+
+      expect(store.langError).toBe(true)
+      expect(store.detailsError).toBe(false)
+      expect(store.repoLanguages).toBeNull()
+      expect(store.selectedRepo).toEqual(enrichedRepo)
+    })
+
+    it('does not set langError when getRepository fails', async () => {
+      vi.spyOn(github, 'getRepository').mockRejectedValue(new Error('API error'))
+      vi.spyOn(github, 'getLanguages').mockResolvedValue({ data: mockLanguages, headers: mockHeaders })
+
+      const store = useRepoSearchStore()
+      await store.selectRepo(mockRepo)
+
+      expect(store.langError).toBe(false)
+      expect(store.detailsError).toBe(true)
+      expect(store.repoLanguages).toBeNull()
+    })
+
+    it('does not set langError when both requests fail', async () => {
+      vi.spyOn(github, 'getRepository').mockRejectedValue(new Error('API error'))
+      vi.spyOn(github, 'getLanguages').mockRejectedValue(new Error('API error'))
+
+      const store = useRepoSearchStore()
+      await store.selectRepo(mockRepo)
+
+      expect(store.langError).toBe(false)
+      expect(store.detailsError).toBe(true)
+    })
+
+    it('does not cache when getLanguages fails so retry re-fetches', async () => {
+      const getRepoSpy = vi.spyOn(github, 'getRepository').mockResolvedValue({ data: enrichedRepo, headers: mockHeaders })
+      vi.spyOn(github, 'getLanguages')
+        .mockRejectedValueOnce(new Error('API error'))
+        .mockResolvedValueOnce({ data: mockLanguages, headers: mockHeaders })
+
+      const store = useRepoSearchStore()
+      await store.selectRepo(mockRepo)
+      expect(store.langError).toBe(true)
+
+      getRepoSpy.mockClear()
+      await store.selectRepo(mockRepo)
+
+      expect(getRepoSpy).toHaveBeenCalled()
+      expect(store.langError).toBe(false)
+      expect(store.repoLanguages).toEqual(mockLanguages)
+    })
+
+    it('langError is cleared when selectRepo is called with null', async () => {
+      vi.spyOn(github, 'getRepository').mockResolvedValue({ data: enrichedRepo, headers: mockHeaders })
+      vi.spyOn(github, 'getLanguages').mockRejectedValue(new Error('API error'))
+
+      const store = useRepoSearchStore()
+      await store.selectRepo(mockRepo)
+      expect(store.langError).toBe(true)
+
+      store.selectRepo(null)
+      expect(store.langError).toBe(false)
+    })
+
+    it('langError is cleared when selecting a different repo', async () => {
+      const otherRepo = { ...mockRepo, id: 2, full_name: 'vuejs/core' }
+      vi.spyOn(github, 'getRepository').mockResolvedValue({ data: enrichedRepo, headers: mockHeaders })
+      vi.spyOn(github, 'getLanguages')
+        .mockRejectedValueOnce(new Error('API error'))
+        .mockResolvedValueOnce({ data: mockLanguages, headers: mockHeaders })
+
+      const store = useRepoSearchStore()
+      await store.selectRepo(mockRepo)
+      expect(store.langError).toBe(true)
+
+      await store.selectRepo(otherRepo)
+      expect(store.langError).toBe(false)
     })
   })
 })

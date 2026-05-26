@@ -14,6 +14,11 @@ export interface MockGitHubRepoOptions {
   body?: Partial<GetRepositoryResponse>
 }
 
+export interface MockGitHubLanguagesOptions {
+  statusCode?: number
+  body?: Record<string, number>
+}
+
 Cypress.Commands.add('mockGitHubSearch', (options: MockGitHubSearchOptions = {}) => {
   cy.intercept('GET', '**/search/repositories**', {
     statusCode: options.statusCode ?? 200,
@@ -22,8 +27,15 @@ Cypress.Commands.add('mockGitHubSearch', (options: MockGitHubSearchOptions = {})
 })
 
 Cypress.Commands.add('mockGitHubRepo', (options: MockGitHubRepoOptions = {}) => {
-  cy.intercept('GET', '**/repos/*/*', {
+  cy.intercept({ method: 'GET', url: /\/repos\/[^/]+\/[^/]+$/ }, {
     statusCode: options.statusCode ?? 200,
     body: options.body ?? githubRepoResult,
   }).as('getRepo')
+})
+
+Cypress.Commands.add('mockGitHubLanguages', (options: MockGitHubLanguagesOptions = {}) => {
+  cy.intercept({ method: 'GET', url: /\/repos\/[^/]+\/[^/]+\/languages$/ }, {
+    statusCode: options.statusCode ?? 200,
+    body: options.body ?? { JavaScript: 5000, TypeScript: 3000 },
+  }).as('getLanguages')
 })

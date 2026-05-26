@@ -13,6 +13,7 @@ export const useSearchRouting = () => {
   const listRef = ref<HTMLDivElement | null>(null)
 
   const resetTime = computed(() => formatResetTime(rateLimitStore.search.resetAt))
+  const coreResetTime = computed(() => formatResetTime(rateLimitStore.core.resetAt))
 
   const isSearchRateLimited = computed(() => rateLimitStore.search.isEmpty)
 
@@ -110,6 +111,7 @@ export const useSearchRouting = () => {
   return {
     listRef,
     resetTime,
+    coreResetTime,
     errorVariant,
     viewState,
     showPageError,

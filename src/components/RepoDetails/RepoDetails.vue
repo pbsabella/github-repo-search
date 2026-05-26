@@ -2,6 +2,7 @@
 import { toRef } from 'vue'
 import type { GitHubRepo, LanguagesData } from '@/types/github'
 import { useRepoDetails } from '@/composables/useRepoDetails'
+import DetailSection from '@/components/DetailSection/DetailSection.vue'
 import RepoDetailsHeader from './RepoDetailsHeader.vue'
 import RepoStatsGrid from './RepoStatsGrid.vue'
 import RepoLanguages from './RepoLanguages.vue'
@@ -12,6 +13,8 @@ const props = defineProps<{
   loading?: boolean
   languages?: LanguagesData | null
   errorVariant?: 'rate-limit' | 'network' | null
+  langError?: boolean
+  resetTime?: string
 }>()
 
 const emit = defineEmits<{
@@ -38,11 +41,7 @@ const { repoShortName, cloneFields, languageItems, featureBadges, details } = us
       </div>
 
       <div v-if="errorVariant" class="repo-details__error">
-        <VAlert
-          variant="tonal"
-          density="compact"
-          :type="errorVariant === 'rate-limit' ? 'warning' : 'error'"
-        >
+        <VAlert variant="tonal" density="compact" type="error">
           <template #append>
             <VBtn size="small" variant="text" @click="emit('retry')">Retry</VBtn>
           </template>
@@ -50,9 +49,13 @@ const { repoShortName, cloneFields, languageItems, featureBadges, details } = us
             <p class="repo-details__error-text">
               {{
                 errorVariant === 'rate-limit'
-                  ? 'Core rate limit reached.'
-                  : 'Failed to load details.'
+                  ? 'Core rate limit reached. Details may be incomplete.'
+                  : 'Something went wrong. Details may be incomplete.'
               }}
+              <template v-if="errorVariant === 'rate-limit' && resetTime">
+                Resets at <strong>{{ resetTime }}</strong
+                >.
+              </template>
             </p>
           </template>
         </VAlert>
@@ -101,8 +104,21 @@ const { repoShortName, cloneFields, languageItems, featureBadges, details } = us
             <RepoStatsGrid :details="details" />
           </VCol>
 
-          <VCol v-if="languageItems.length" cols="12">
-            <RepoLanguages :items="languageItems" />
+          <VCol
+            v-if="languageItems.length || (langError && errorVariant !== 'rate-limit')"
+            cols="12"
+          >
+            <RepoLanguages v-if="languageItems.length" :items="languageItems" />
+            <DetailSection v-else title="Languages">
+              <VAlert variant="outlined" density="compact" type="error" icon-size="small">
+                <template #append>
+                  <VBtn size="small" variant="text" @click="emit('retry')">Retry</VBtn>
+                </template>
+                <template #text>
+                  <p class="repo-details__error-text">Language data unavailable.</p>
+                </template>
+              </VAlert>
+            </DetailSection>
           </VCol>
 
           <VCol v-if="cloneFields.length" cols="12">
