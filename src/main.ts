@@ -1,4 +1,5 @@
 import './assets/main.css'
+import { inject } from '@vercel/analytics'
 import 'vuetify/styles'
 
 import { createApp } from 'vue'
@@ -18,3 +19,5 @@ app.use(router)
 app.use(vuetify)
 
 app.mount('#app')
+
+inject()
