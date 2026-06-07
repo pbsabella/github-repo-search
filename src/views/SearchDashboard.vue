@@ -248,6 +248,7 @@ const {
   }
 
   &__repo-details {
+    background-color: var(--color-background-muted);
     overflow-y: auto;
     height: 100%;
   }
