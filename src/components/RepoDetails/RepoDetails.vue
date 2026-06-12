@@ -148,7 +148,6 @@ const { repoShortName, cloneFields, languageItems, featureBadges, details } = us
 
 <style lang="scss">
 .repo-details {
-  background-color: var(--color-background-muted);
   display: flex;
   flex-direction: column;
   height: 100%;

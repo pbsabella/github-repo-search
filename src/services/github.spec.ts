@@ -18,6 +18,11 @@ vi.mock('axios', () => {
   )
 
   const mockApi = {
+    defaults: {
+      headers: {
+        common: {} as Record<string, string>,
+      },
+    },
     interceptors: {
       response: {
         use: vi.fn<(
